@@ -1,73 +1,58 @@
-import { useState, useEffect } from "react";
-import ModeCard from "../components/ModeCard";
+import { useEffect, useState } from "react";
 import { getModes } from "../api_services/api_services";
+import { useNavigate } from "react-router-dom";
+import Header from "../components/Header";
+import Footer from "../components/Footer";
 
-export default function Home({ onModeSelect, onShowHistory, onLogout }) {
+export default function Home() {
   const [modes, setModes] = useState([]);
-  const [loading, setLoading] = useState(true);
-
+  const navigate = useNavigate();
   useEffect(() => {
-    const fetchModes = async () => {
-      const data = await getModes();
-      setModes(data);
-      setLoading(false);
-    };
-    fetchModes();
+    getModes().then(setModes);
   }, []);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="text-5xl mb-4">🌾</div>
-          <p className="text-gray-600 text-lg">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-gray-50 py-6">
-      <div className="max-w-4xl mx-auto px-4">
-        {/* Header with Menu */}
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-800">
-              What do you need help with?
-            </h1>
-            <p className="text-gray-600 mt-2">
-              Select a category to get personalized advice
-            </p>
-          </div>
-          <div className="flex gap-3">
-            <button
-              onClick={onShowHistory}
-              className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition-colors flex items-center gap-2"
-            >
-              <span>📋</span>
-              History
-            </button>
-            <button
-              onClick={onLogout}
-              className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition-colors flex items-center gap-2"
-            >
-              <span>🚪</span>
-              Logout
-            </button>
-          </div>
+    <div className="min-h-screen w-screen flex flex-col bg-white">
+      <Header title="Digital Krishi Officer" showHistory showLogin showLogout />
+      <main className="flex-1 flex flex-col items-center justify-center px-4 pb-8">
+        <div className="mb-8 text-center">
+          <h2 className="text-xl md:text-2xl font-semibold text-gray-800 mb-2">Welcome!</h2>
+          <p className="text-gray-600 text-base md:text-lg">How can we help you today?</p>
         </div>
-
-        {/* Mode Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {modes.map((mode) => (
-            <ModeCard
-              key={mode.id}
-              mode={mode}
-              onClick={() => onModeSelect(mode)}
-            />
-          ))}
+        <div
+          className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 w-full max-w-5xl justify-items-center"
+        >
+          {modes.map((mode) => {
+            let iconFile = "/default.png";
+            if (mode.id === "crop") iconFile = "/crop.svg";
+            else if (mode.id === "pest") iconFile = "/pest.svg";
+            else if (mode.id === "weather") iconFile = "/weather.svg";
+            else if (mode.id === "scheme") iconFile = "/scheme.svg";
+            else if (mode.id === "mislenous") iconFile = "/mislenous.svg";
+            const handleClick = () => {
+              if (["crop", "pest", "mislenous"].includes(mode.id)) {
+                navigate('/ask-doubt', { state: { mode } });
+              } else if (["weather", "scheme"].includes(mode.id)) {
+                navigate('/select-crop', { state: { mode } });
+              } else {
+                navigate('/context', { state: { mode } });
+              }
+            };
+            return (
+              <button
+                key={mode.id}
+                className="flex flex-col items-center justify-center bg-white border-2 border-green-500 rounded-2xl shadow-lg py-8 px-4 w-44 h-44 hover:bg-green-50 transition focus:outline-none focus:ring-2 focus:ring-green-400"
+                onClick={handleClick}
+              >
+                <img src={iconFile} alt="icon" className="w-14 h-14 mb-4" />
+                <span className="text-lg font-semibold text-green-700 text-center break-words">{mode.label}</span>
+              </button>
+            );
+          })}
         </div>
-      </div>
+      </main>
+      <div className="h-8" />
+      <Footer />
     </div>
   );
 }

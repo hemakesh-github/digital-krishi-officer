@@ -1,63 +1,47 @@
-import { useState, useEffect } from "react";
-import HistoryItem from "../components/HistoryItem";
-import { getHistory } from "../api_services/api_services";
+
+
+import React, { useState, useEffect } from "react";
+import Header from "../components/Header";
+import Footer from "../components/Footer";
+import { getHistory, getHistoryDetails } from "../api_services/api_services";
+import { useNavigate } from "react-router-dom";
+
 
 export default function History({ onBack }) {
   const [history, setHistory] = useState([]);
-  const [loading, setLoading] = useState(true);
-
+  const navigate = useNavigate();
   useEffect(() => {
-    const fetchHistory = async () => {
-      const data = await getHistory();
-      setHistory(data);
-      setLoading(false);
-    };
-    fetchHistory();
+    getHistory().then(setHistory);
   }, []);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin text-5xl mb-4">⏳</div>
-          <p className="text-gray-600 text-lg">Loading history...</p>
-        </div>
-      </div>
-    );
-  }
+  const handleView = async (id) => {
+    const data = await getHistoryDetails(id);
+    // For QueryDetails page, pass all details
+    navigate("/query-details", { state: { details: {
+      ...data,
+      recommendationList: data.recommendation ? [data.recommendation] : [],
+      precautionsList: data.precautions ? [data.precautions] : [],
+    }} });
+  };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-6">
-      <div className="max-w-2xl mx-auto px-4">
-        <button
-          onClick={onBack}
-          className="mb-6 bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg transition-colors"
-        >
-          ← Back
-        </button>
-
-        <h1 className="text-3xl font-bold text-gray-800 mb-2">Query History</h1>
-        <p className="text-gray-600 mb-8">
-          All your previous queries and their status
-        </p>
-
-        {history.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-2xl mb-2">📭</p>
-            <p className="text-gray-600 text-lg">No queries yet</p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {history.map((item) => (
-              <HistoryItem
-                key={item.id}
-                item={item}
-                onClick={() => alert(`Viewing: ${item.title}`)}
-              />
+    <div className="min-h-screen w-screen flex flex-col bg-[#f6fcf7]">
+      <Header title="History" showBack />
+      <main className="flex-1 flex flex-col items-center justify-center px-4 py-8">
+        <div className="w-full max-w-xl bg-white rounded-2xl shadow p-8 border border-green-100">
+          <h2 className="text-xl font-bold text-green-700 mb-4">Query History</h2>
+          <ul className="divide-y divide-gray-200">
+            {history.map(item => (
+              <li key={item.id} className="py-3 flex flex-row justify-between items-center gap-2">
+                <span className="font-medium text-black">{item.title}</span>
+                <span className="text-xs px-2 py-1 rounded bg-green-100 text-green-700 border border-green-200 ml-2">{item.status}</span>
+                <button className="ml-2 px-3 py-1 rounded bg-green-500 text-white text-xs font-semibold hover:bg-green-600 transition" onClick={() => handleView(item.id)}>View</button>
+              </li>
             ))}
-          </div>
-        )}
-      </div>
+          </ul>
+        </div>
+      </main>
+      <Footer />
     </div>
   );
 }

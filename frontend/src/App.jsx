@@ -1,150 +1,131 @@
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { useState } from "react";
-import "./App.css";
+
+
 import Login from "./pages/Login";
 import LanguageSelection from "./pages/LanguageSelection";
 import Home from "./pages/Home";
-import Context from "./pages/Context";
-import Input from "./pages/Input";
-import Result from "./pages/Result";
-import Escalation from "./pages/Escalation";
+import AskDoubt from "./pages/AskDoubt";
+import SelectCrop from "./pages/SelectCrop";
+
 import History from "./pages/History";
+import Result from "./pages/Result";
+import QueryDetails from "./pages/QueryDetails";
+import Escalation from "./pages/Escalation";
+// import Input from "./pages/Input";
+import About from "./pages/About";
+import Logout from "./pages/Logout";
+import CropDetails from "./pages/CropDetails";
+import './App.css';
 
-function App() {
-  // Navigation state
-  const [currentPage, setCurrentPage] = useState("login");
-
-  // User data
-  const [user, setUser] = useState(null);
-  const [language, setLanguage] = useState(null);
-
-  // Query flow data
-  const [selectedMode, setSelectedMode] = useState(null);
-  const [context, setContext] = useState(null);
-  const [queryResult, setQueryResult] = useState(null);
-  const [escalationStatus, setEscalationStatus] = useState(null);
-
-  // Handle login
-  const handleLoginSuccess = (response) => {
-    setUser(response);
-    setCurrentPage("languageSelection");
-  };
-
-  // Handle language selection
-  const handleLanguageSelect = (lang) => {
-    setLanguage(lang);
-    setCurrentPage("home");
-  };
-
-  // Handle mode selection
-  const handleModeSelect = (mode) => {
-    setSelectedMode(mode);
-    setCurrentPage("context");
-  };
-
-  // Handle context submission
-  const handleContextSubmit = (contextData) => {
-    setContext(contextData);
-    setCurrentPage("input");
-  };
-
-  // Handle query submission
-  const handleQuerySubmit = (result) => {
-    setQueryResult(result);
-    setCurrentPage("result");
-  };
-
-  // Handle escalation
-  const handleEscalate = (status) => {
-    setEscalationStatus(status);
-    setCurrentPage("escalation");
-  };
-
-  // Handle logout
-  const handleLogout = () => {
-    setUser(null);
-    setLanguage(null);
-    setSelectedMode(null);
-    setContext(null);
-    setQueryResult(null);
-    setEscalationStatus(null);
-    setCurrentPage("login");
-  };
-
-  // Handle back navigation
-  const handleBack = () => {
-    if (currentPage === "context") setCurrentPage("home");
-    else if (currentPage === "input") setCurrentPage("context");
-    else if (currentPage === "result") setCurrentPage("input");
-  };
-
-  // Handle show history
-  const handleShowHistory = () => {
-    setCurrentPage("history");
-  };
-
-  // Render current page
-  const renderPage = () => {
-    switch (currentPage) {
-      case "login":
-        return <Login onLoginSuccess={handleLoginSuccess} />;
-
-      case "languageSelection":
-        return <LanguageSelection onLanguageSelect={handleLanguageSelect} />;
-
-      case "home":
-        return (
-          <Home
-            onModeSelect={handleModeSelect}
-            onShowHistory={handleShowHistory}
-            onLogout={handleLogout}
-          />
-        );
-
-      case "context":
-        return (
-          <Context
-            mode={selectedMode}
-            onContextSubmit={handleContextSubmit}
-            onBack={handleBack}
-          />
-        );
-
-      case "input":
-        return (
-          <Input
-            context={context}
-            mode={selectedMode}
-            onQuerySubmit={handleQuerySubmit}
-            onBack={handleBack}
-          />
-        );
-
-      case "result":
-        return (
-          <Result
-            result={queryResult}
-            onEscalate={handleEscalate}
-            onBack={handleBack}
-          />
-        );
-
-      case "escalation":
-        return (
-          <Escalation
-            escalationStatus={escalationStatus}
-            onGoHome={() => setCurrentPage("home")}
-          />
-        );
-
-      case "history":
-        return <History onBack={() => setCurrentPage("home")} />;
-
-      default:
-        return <Login onLoginSuccess={handleLoginSuccess} />;
-    }
-  };
-
-  return <div className="app">{renderPage()}</div>;
+function Profile() {
+  return (
+    <div className="h-screen w-screen flex flex-col items-center justify-center bg-white">
+      <h1 className="text-3xl font-bold text-green-700 mb-4">Profile</h1>
+      <p className="text-gray-600">This is a placeholder profile page.</p>
+    </div>
+  );
 }
 
-export default App;
+function App() {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [language, setLanguage] = useState(null);
+  const [showHome, setShowHome] = useState(false);
+  const [question, setQuestion] = useState("");
+  const [mode, setMode] = useState(null);
+  const [crop, setCrop] = useState(null);
+  const [result, setResult] = useState(null);
+  const [escalationStatus, setEscalationStatus] = useState(null);
+
+  return (
+    <Router>
+      <Routes>
+        <Route path="/" element={<Navigate to="/login" replace />} />
+        <Route path="/login" element={<Login onLogin={() => setIsLoggedIn(true)} />} />
+        <Route path="/logout" element={<Logout />} />
+        <Route path="/about" element={<About />} />
+        <Route path="/language" element={isLoggedIn ? <LanguageSelection onSelect={(lang) => { setLanguage(lang); setShowHome(true); }} /> : <Navigate to="/login" replace />} />
+        <Route path="/home" element={showHome ? <Home /> : <Navigate to="/language" replace />} />
+        <Route path="/history" element={<HistoryWrapper />} />
+        <Route path="/ask-doubt" element={<AskDoubtWrapper />} />
+        <Route path="/select-crop" element={<SelectCropWrapper />} />
+        <Route path="/crop-details" element={<CropDetailsWrapper />} />
+
+        <Route path="/result" element={<ResultWrapper />} />
+        <Route path="/query-details" element={<QueryDetails />} />
+        <Route path="/escalation" element={<EscalationWrapper />} />
+        <Route path="/profile" element={<Profile />} />
+      </Routes>
+    </Router>
+  );
+}
+
+
+import { useLocation, useNavigate } from "react-router-dom";
+
+function ContextRouteWrapper() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const mode = location.state?.mode;
+  // If you want to keep Context page, update navigation as needed
+  return <Context mode={mode} onBack={() => navigate(-1)} onSubmit={() => navigate("/home")} />;
+}
+
+function AskDoubtWrapper() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const mode = location.state?.mode;
+  return <AskDoubt mode={mode} onNext={(question) => navigate("/select-crop", { state: { mode, question } })} />;
+}
+
+
+function SelectCropWrapper() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { mode, question } = location.state || {};
+  return <SelectCrop mode={mode} question={question} onNext={(crop) => navigate("/crop-details", { state: { mode, question, crop } })} />;
+}
+
+
+import { submitQuery } from "./api_services/api_services";
+function CropDetailsWrapper() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { mode, question, crop } = location.state || {};
+  const handleNext = async ({ location: loc, stage }) => {
+    let payload = {};
+    if (mode === "weather") {
+      payload = { location: loc, crop, stage };
+    } else if (mode === "scheme") {
+      payload = { location: loc, crop };
+    } else {
+      payload = { question, crop, location: loc, stage };
+    }
+    const result = await submitQuery(payload);
+    navigate("/result", { state: { result, mode, question, crop, location: loc, stage } });
+  };
+  return <CropDetails mode={mode} question={question} crop={crop} onNext={handleNext} />;
+}
+
+
+
+function ResultWrapper() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { result, mode, question, crop } = location.state || {};
+  return <Result result={result} onHelpful={() => navigate("/home")} onEscalate={(status) => navigate("/escalation", { state: { status } })} />;
+}
+
+function EscalationWrapper() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { status } = location.state || {};
+  return <Escalation status={status} onGoHome={() => navigate("/home")} />;
+}
+
+function HistoryWrapper() {
+  const navigate = useNavigate();
+  return <History onBack={() => navigate(-1)} />;
+}
+
+export default App

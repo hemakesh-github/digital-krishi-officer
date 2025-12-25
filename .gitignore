@@ -1,4 +1,7 @@
-node_modules/
+# Ignore old folder
+old/
+
++node_modules/
 dist/
 .env
 .env.local
@@ -9,3 +12,4 @@ dist/
 *.swo
 *~
 .idea/
+old/
