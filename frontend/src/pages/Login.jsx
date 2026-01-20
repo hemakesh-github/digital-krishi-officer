@@ -16,7 +16,7 @@ export default function Login({ onLogin }) {
     useEffect(() => {
         if (token) {
             onLogin && onLogin({ success: true, token });
-            navigate("/home");
+            navigate("/language");
         }
     }, [token, navigate, onLogin]);
 
@@ -31,7 +31,7 @@ export default function Login({ onLogin }) {
         if (res.success) {
             setToken(res.token);
             onLogin && onLogin(res);
-            navigate("/home");
+            navigate("/language");
         } else {
             setError("Invalid credenntials");
         }

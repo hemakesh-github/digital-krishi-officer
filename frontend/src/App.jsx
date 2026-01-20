@@ -38,7 +38,7 @@ function App() {
     return (
         <Router>
             <Routes>
-                <Route path="/" element={isLoggedIn ? <Navigate to="/home" replace /> : <Navigate to="/login" replace />} />
+                <Route path="/" element={isLoggedIn ? <Navigate to="/language" replace /> : <Navigate to="/login" replace />} />
                 <Route path="/login" element={<Login onLogin={() => setIsLoggedIn(true)} />} />
                 <Route path="/logout" element={<Logout />} />
                 <Route path="/about" element={<About />} />
