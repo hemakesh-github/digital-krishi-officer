@@ -10,13 +10,15 @@ export default function Login({ onLogin }) {
     const [error, setError] = useState("");
     const navigate = useNavigate();
     const { t } = useTranslation();
+
     const token = localStorage.getItem('token');
 
     useEffect(() => {
         if (token) {
+            onLogin && onLogin({ success: true, token });
             navigate("/home");
         }
-    }, [token, navigate]);
+    }, [token, navigate, onLogin]);
 
     const handleSubmit = async (e) => {
 
@@ -29,7 +31,7 @@ export default function Login({ onLogin }) {
         if (res.success) {
             setToken(res.token);
             onLogin && onLogin(res);
-            navigate("/language");
+            navigate("/home");
         } else {
             setError("Invalid credenntials");
         }

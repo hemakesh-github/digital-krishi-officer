@@ -29,7 +29,7 @@ export default function Home() {
 
     return (
         <div className="min-h-screen w-screen flex flex-col bg-white">
-            <Header title={t("digital_krishi_officer")}  />
+            <Header title={t("digital_krishi_officer")} />
             <main className="flex-1 flex flex-col items-center justify-center px-4 pb-8">
                 <div className="mb-8 text-center">
                     <h2 className="text-xl md:text-2xl font-semibold text-gray-800 mb-2">{t("welcome")}</h2>
@@ -48,9 +48,11 @@ export default function Home() {
                         else if (mode.id === "marketprice") iconFile = "/market.png"
 
                         const handleClick = () => {
-                            if (["crop", "pest", "mislenous", "scheme"].includes(mode.id)) {
+                            if (mode.id === "marketprice") {
+                                navigate('/market-prices');
+                            } else if (["crop", "pest", "mislenous", "scheme"].includes(mode.id)) {
                                 navigate('/ask-doubt', { state: { mode } });
-                            } else if (["weather", "marketprice"].includes(mode.id)) {
+                            } else if (mode.id === "weather") {
                                 navigate('/select-crop', { state: { mode } });
                             } else {
                                 navigate('/ask-doubt', { state: { mode } });

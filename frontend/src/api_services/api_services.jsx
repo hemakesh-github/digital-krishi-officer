@@ -106,7 +106,6 @@ export const getModes = async () => {
         { id: "pest", label: "Pest / Disease" },
         { id: "weather", label: "Weather Advice" },
         { id: "scheme", label: "Government Schemes" },
-        { id: "marketprice", label: "Market Price" },
         { id: "mislenous", label: "Miscellaneous" },
     ];
 };

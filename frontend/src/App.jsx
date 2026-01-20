@@ -26,8 +26,9 @@ function Profile() {
     );
 }
 
-const ProtectedRoute = ({ children, isLoggedIn }) => {
-    return isLoggedIn ? children : <Navigate to="/login" replace />;
+const ProtectedRoute = ({ children }) => {
+    const isAuth = !!localStorage.getItem("token");
+    return isAuth ? children : <Navigate to="/login" replace />;
 };
 
 function App() {
@@ -37,23 +38,23 @@ function App() {
     return (
         <Router>
             <Routes>
-                <Route path="/" element={<Navigate to="/login" replace />} />
+                <Route path="/" element={isLoggedIn ? <Navigate to="/home" replace /> : <Navigate to="/login" replace />} />
                 <Route path="/login" element={<Login onLogin={() => setIsLoggedIn(true)} />} />
                 <Route path="/logout" element={<Logout />} />
                 <Route path="/about" element={<About />} />
                 <Route path="/language" element={isLoggedIn ? <LanguageSelection onSelect={(lang) => setLanguage(lang)} /> : <Navigate to="/login" replace />} />
 
                 {/* Protected Routes */}
-                <Route path="/home" element={<ProtectedRoute isLoggedIn={isLoggedIn}><Home /></ProtectedRoute>} />
-                <Route path="/market-prices" element={<ProtectedRoute isLoggedIn={isLoggedIn}><MarketPrices /></ProtectedRoute>} />
-                <Route path="/history" element={<ProtectedRoute isLoggedIn={isLoggedIn}><HistoryWrapper /></ProtectedRoute>} />
-                <Route path="/ask-doubt" element={<ProtectedRoute isLoggedIn={isLoggedIn}><AskDoubtWrapper /></ProtectedRoute>} />
-                <Route path="/select-crop" element={<ProtectedRoute isLoggedIn={isLoggedIn}><SelectCropWrapper /></ProtectedRoute>} />
-                <Route path="/crop-details" element={<ProtectedRoute isLoggedIn={isLoggedIn}><CropDetailsWrapper /></ProtectedRoute>} />
-                <Route path="/result" element={<ProtectedRoute isLoggedIn={isLoggedIn}><ResultWrapper /></ProtectedRoute>} />
-                <Route path="/query-details" element={<ProtectedRoute isLoggedIn={isLoggedIn}><QueryDetails /></ProtectedRoute>} />
-                <Route path="/escalation" element={<ProtectedRoute isLoggedIn={isLoggedIn}><EscalationWrapper /></ProtectedRoute>} />
-                <Route path="/profile" element={<ProtectedRoute isLoggedIn={isLoggedIn}><Profile /></ProtectedRoute>} />
+                <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+                <Route path="/market-prices" element={<ProtectedRoute><MarketPrices /></ProtectedRoute>} />
+                <Route path="/history" element={<ProtectedRoute><HistoryWrapper /></ProtectedRoute>} />
+                <Route path="/ask-doubt" element={<ProtectedRoute><AskDoubtWrapper /></ProtectedRoute>} />
+                <Route path="/select-crop" element={<ProtectedRoute><SelectCropWrapper /></ProtectedRoute>} />
+                <Route path="/crop-details" element={<ProtectedRoute><CropDetailsWrapper /></ProtectedRoute>} />
+                <Route path="/result" element={<ProtectedRoute><ResultWrapper /></ProtectedRoute>} />
+                <Route path="/query-details" element={<ProtectedRoute><QueryDetails /></ProtectedRoute>} />
+                <Route path="/escalation" element={<ProtectedRoute><EscalationWrapper /></ProtectedRoute>} />
+                <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             </Routes>
         </Router>
     );
