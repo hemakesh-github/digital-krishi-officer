@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { loginUser } from "../api_services/api_services";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { setToken } from "../Auth/auth_utils";
 
 export default function Login({ onLogin }) {
     const [userId, setUserId] = useState("");
@@ -9,22 +10,34 @@ export default function Login({ onLogin }) {
     const [error, setError] = useState("");
     const navigate = useNavigate();
     const { t } = useTranslation();
+    const token = localStorage.getItem('token');
+
+    useEffect(() => {
+        if (token) {
+            navigate("/home");
+        }
+    }, [token, navigate]);
 
     const handleSubmit = async (e) => {
+
         e.preventDefault();
+        if (!userId || !password) {
+            setError("Please enter both user ID and password");
+            return;
+        }
         const res = await loginUser(userId, password);
         if (res.success) {
+            setToken(res.token);
             onLogin && onLogin(res);
             navigate("/language");
         } else {
-            setError("Invalid credentials");
+            setError("Invalid credenntials");
         }
     };
 
     return (
         <div className="fixed inset-0 min-h-screen min-w-full flex flex-col justify-center items-center bg-linear-to-b from-green-50 to-white z-50">
             <div className="flex flex-col items-center mb-8">
-                {/* Green ring */}
                 <div className="w-25 h-25 md:w-30 md:h-30 rounded-full border-8 border-green-600 flex items-center justify-center mb-6">
                     <div className="w-16 h-16 md:w-20 md:h-20 bg-white rounded-full"></div>
                 </div>

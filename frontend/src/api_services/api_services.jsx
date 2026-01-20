@@ -83,7 +83,7 @@ export const getCrops = async () => {
  * Output: { success: boolean, role: string }
  */
 export const loginUser = async (userId, password) => {
-    return { success: true, role: "farmer" };
+    return { success: true, role: "farmer", token: "dummy-jwt-token-123456789" };
 };
 
 /**

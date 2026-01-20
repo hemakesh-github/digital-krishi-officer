@@ -1,7 +1,11 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { getToken } from "../Auth/auth_utils";
 
-export default function Header({ title, showBack = false, showHistory = false, showLogin = false, showLogout = false }) {
+export default function Header({ title, showBack = false, showHistory = true }) {
+    const token = localStorage.getItem('token');
+    const showLogin = !token;
+    const showLogout = !!token;
     const navigate = useNavigate();
     const location = useLocation();
     const { t } = useTranslation();
