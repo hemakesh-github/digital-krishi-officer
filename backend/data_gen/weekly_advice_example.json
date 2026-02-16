@@ -1,0 +1,57 @@
+[
+
+  { "district":"Srikakulam","crop":"Rabi Rice","stage":"Vegetative","problem_disease":"Leaf folder","advice":"Spray Acephate @1.5 g/L or Chlorantraniliprole @0.3 ml/L"},
+  { "district":"Srikakulam","crop":"Rabi Rice","stage":"Vegetative","problem_disease":"Stem borer","advice":"Spray Acephate @1.5 g/L or Chlorantraniliprole @0.3 ml/L"},
+  { "district":"Srikakulam","crop":"Maize","stage":"Vegetative","problem_disease":"Fall army worm","advice":"Spray Emamectin benzoate @0.4 g/L"},
+  { "district":"Srikakulam","crop":"Pulses","stage":"Vegetative","problem_disease":"Maruca leaf webber","advice":"Spray Chlorpyriphos @2.5 ml/L or Emamectin benzoate @0.4 g/L"},
+  { "district":"Srikakulam","crop":"Sesame","stage":"Vegetative","problem_disease":"Leaf hopper","advice":"Spray Imidacloprid @0.3 ml/L or Acetamiprid @0.3 g/L"},
+  { "district":"Srikakulam","crop":"Groundnut","stage":"Vegetative","problem_disease":"Sucking pests","advice":"Spray Imidacloprid @0.3 ml/L"},
+
+  { "district":"Vizianagaram","crop":"Rabi Rice","stage":"Vegetative","problem_disease":"Leaf folder","advice":"Spray Acephate @1.5 g/L or Chlorantraniliprole @0.3 ml/L"},
+  { "district":"Vizianagaram","crop":"Rabi Rice","stage":"Vegetative","problem_disease":"Stem borer","advice":"Spray Acephate @1.5 g/L or Chlorantraniliprole @0.3 ml/L"},
+  { "district":"Vizianagaram","crop":"Rabi Maize","stage":"Tasseling","problem_disease":"Fall army worm","advice":"Spray Emamectin benzoate @0.4 g/L or Spinosad @0.3 ml/L"},
+
+  { "district":"Visakhapatnam","crop":"Maize","stage":"Vegetative","problem_disease":"Fall army worm","advice":"Spray Emamectin benzoate @0.4 g/L"},
+  { "district":"Visakhapatnam","crop":"Groundnut","stage":"Vegetative","problem_disease":"Sucking pests","advice":"Spray Imidacloprid @0.3 ml/L"},
+
+  { "district":"Anakapalli","crop":"Rabi Rice","stage":"Vegetative","problem_disease":"Leaf folder","advice":"Spray Acephate @1.5 g/L or Chlorantraniliprole @0.3 ml/L"},
+  { "district":"Anakapalli","crop":"Ragi","stage":"Vegetative","problem_disease":"Pink stem borer","advice":"Spray Chlorpyriphos @2.5 ml/L"},
+
+
+  { "district":"Kakinada","crop":"Rabi Rice","stage":"Tillering","problem_disease":"Stem borer","advice":"Install pheromone traps; need-based spray"},
+  { "district":"Kakinada","crop":"Blackgram","stage":"Pod development","problem_disease":"Powdery mildew","advice":"Spray Propiconazole @1 ml/L"},
+  { "district":"Kakinada","crop":"Blackgram","stage":"Pod development","problem_disease":"Yellow Mosaic Virus","advice":"Spray Imidacloprid @0.3 ml/L or Thiamethoxam @0.25 g/L"},
+
+  { "district":"East Godavari","crop":"Rabi Rice","stage":"Tillering","problem_disease":"Leaf folder","advice":"Install pheromone traps; need-based spray"},
+  { "district":"East Godavari","crop":"Blackgram","stage":"Pod development","problem_disease":"Powdery mildew","advice":"Spray Propiconazole @1 ml/L"},
+
+  { "district":"Konaseema","crop":"Blackgram","stage":"Flowering to pod stage","problem_disease":"Yellow Mosaic Virus","advice":"Spray Imidacloprid @0.3 ml/L or Thiamethoxam @0.25 g/L"},
+
+  { "district":"West Godavari","crop":"Rice","stage":"Booting to heading","problem_disease":"Rice blast","advice":"Spray Tricyclazole @0.6 g/L or Kasugamycin @2.5 ml/L"},
+  { "district":"West Godavari","crop":"Blackgram","stage":"Flowering","problem_disease":"Maruca pod borer","advice":"Spray Chlorpyriphos @2.5 ml/L or Emamectin benzoate @0.4 g/L"},
+
+
+  { "district":"Guntur","crop":"Rice","stage":"Booting to heading","problem_disease":"Rice blast","advice":"Spray Tricyclazole @0.6 g/L or Kasugamycin @2.5 ml/L"},
+  { "district":"Guntur","crop":"Rice","stage":"Booting to heading","problem_disease":"Brown plant hopper","advice":"Spray Acephate @1.5 g/L or Thiomethoxam @0.3 g/L"},
+  { "district":"Guntur","crop":"Maize","stage":"Tasseling","problem_disease":"Fall army worm","advice":"Release Trichogramma; spray Emamectin benzoate @0.4 g/L"},
+
+  { "district":"Bapatla","crop":"Redgram","stage":"Pod development","problem_disease":"Pod borers","advice":"Spray Flubendiamide @0.2 ml/L or Chlorantraniliprole @0.3 ml/L"},
+
+  { "district":"Krishna","crop":"Rice","stage":"Booting","problem_disease":"Rice blast","advice":"Spray Tricyclazole @0.6 g/L"},
+  { "district":"NTR","crop":"Rice","stage":"Booting","problem_disease":"Brown plant hopper","advice":"Spray Buprofezin @1.6 ml/L"},
+
+  { "district":"Palnadu","crop":"Blackgram","stage":"Flowering","problem_disease":"Yellow vein mosaic","advice":"Remove infected plants; spray Acetamiprid @0.2 g/L"},
+  { "district":"Prakasam","crop":"Ragi","stage":"Vegetative","problem_disease":"Blast","advice":"Spray Carbendazim @1 g/L or Tricyclazole @0.6 g/L"},
+
+
+  { "district":"Tirupati","crop":"Paddy","stage":"General","problem_disease":"Leaf folder","advice":"Spray Flubendamide @0.25 ml/L"},
+  { "district":"Chittoor","crop":"Maize","stage":"Vegetative","problem_disease":"Fall army worm","advice":"Spray Spinetoram @0.5 ml/L or Chlorantraniliprole @0.4 ml/L"},
+  { "district":"SPSR Nellore","crop":"Blackgram","stage":"General","problem_disease":"Powdery mildew","advice":"Spray Myclobutanil @1 g/L"},
+  { "district":"YSR Kadapa","crop":"Paddy","stage":"General","problem_disease":"Blast","advice":"Spray Tricyclazole @0.6 g/L"},
+  { "district":"Annamayya","crop":"Redgram","stage":"General","problem_disease":"Pod fly","advice":"Spray Flubendamide @0.25 ml/L"},
+
+  { "district":"Anantapur","crop":"Groundnut","stage":"Pod development","problem_disease":"Helicoverpa","advice":"Spray Spinosad @0.35 ml/L or Rynaxypyr @0.2 ml/L"},
+  { "district":"Anantapur","crop":"Groundnut","stage":"Pod development","problem_disease":"Spodoptera","advice":"Spray Emamectin benzoate @0.4 g/L"},
+  { "district":"Kurnool","crop":"Chilli","stage":"General","problem_disease":"Mites","advice":"Spray Wettable sulphur @3 g/L"},
+  { "district":"Nandyal","crop":"Mango","stage":"Flowering","problem_disease":"Powdery mildew","advice":"Spray Hexaconazole @0.5 ml/L"}
+]

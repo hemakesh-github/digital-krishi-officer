@@ -1,7 +1,7 @@
 # Ignore old folder
 old/
 
-+node_modules/
+node_modules/
 dist/
 .env
 .env.local
@@ -14,3 +14,29 @@ dist/
 .idea/
 old/
 models/
+backend/LLM/retrieval/models/
+
+# Jupyter Notebooks
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# Data & Artifacts (already added 'models/' but be explicit)
+*.csv
+!*requirements*.csv
+
+# Generated Reports
+eda_report.txt
+eda_output.txt
+
+# Jupyter Notebook Checkpoints
+backend/.ipynb_checkpoints/
+models/.ipynb_checkpoints/
+
+# Frontend Build Artifacts
+frontend/dist/
+frontend-new/dist/
+frontend/build/
+frontend-new/build/
+
+# Cache from Data Processing
+backend/data_gen/__pycache__/
