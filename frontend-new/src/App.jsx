@@ -1,17 +1,23 @@
 import { Routes, Route } from 'react-router-dom'
 import Login from './pages/Login'
 import Home from './pages/Home'
-import Header from './components/Header'
-function App() {
+import DiseasePrediction from './pages/DiseasePrediction'
+import CropAdvice from './pages/CropAdvice'
+import History from './pages/History'
+import DiseaseResult from './pages/DiseaseResult'
+import Chat from './pages/Chat'
 
+function App() {
     return (
-        <div className='h-full bg-linear-to-b from-[#E8F5E9] via-[#C8E6C9] to-[#A5D6A7]'>
-            <Header/>
-            <Routes>
-                <Route path="/" element={<Home />} />
-                <Route path="/login" element={<Login />} />
-            </Routes>
-        </div>
+        <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/disease" element={<DiseasePrediction />} />
+            <Route path="/crop-advice" element={<CropAdvice />} />
+            <Route path="/history" element={<History />} />
+            <Route path="/disease-result" element={<DiseaseResult />} />
+            <Route path="/chat" element={<Chat />} />
+        </Routes>
     )
 }
 

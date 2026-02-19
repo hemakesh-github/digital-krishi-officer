@@ -2,42 +2,39 @@ import os
 import requests
 from dotenv import load_dotenv
 load_dotenv()
-class getWeatherData:
-    def __init__(self):
-        self.url = os.getenv("WEATHER_API_URL")
-        self.api_key = os.getenv("WEATHER_API_KEY")
+class WeatherData:
+    URL =  os.getenv("WEATHER_API_URL")
+    API_KEY = os.getenv("WEATHER_API_KEY")
+    
 
-    def getCurrentWeatherData(self, location: str):
+    def getCurrentWeatherData(lat, lon):
         # Logic to fetch weather data for the given location
         
-        lat, lon = self.getLatLong(location)
         params = {
             'lat': lat,  # Placeholder latitude
             'lon': lon,  # Placeholder longitude
-            'appid': self.api_key
+            'appid': API_KEY
         }
-        data = requests.get(self.url, params=params).json()
+        data = requests.get(URL, params=params).json()
         parsedData = self.parseResponse([data])
         data = [parsedData, self.weather_advice(parsedData[0]["temperature"], parsedData[0]["humidity"], parsedData[0]["wind"], parsedData[0]["rain"])]
         return data
     
-    def getForecastWeatherData(self, location: str):
+    def getForecastWeatherData(self, lat, lon):
         # Logic to fetch forecast weather data for the given location
-        lat, lon = self.getLatLong(location)
         params = {
             'lat': lat,  # Placeholder latitude
             'lon': lon,  # Placeholder longitude
-            'appid': self.api_key
+            'appid': API_KEY
         }
-        data = requests.get(self.url + "/forecast", params=params).json()
+        data = requests.get(URL + "/forecast", params=params).json()
 
         parsedData = self.parseResponse(data)
         data = data[0]
         data = [parsedData, self.weather_advice(parsedData[0]["temperature"], parsedData[0]["humidity"], parsedData[0]["wind"], parsedData[0]["rain"])]
         return data
-   
 
-        
+
     def parseResponse(self, data):
         # Logic to parse the weather data response and extract relevant information
         # print(data)
@@ -151,5 +148,5 @@ class getWeatherData:
                 ]
             }
     
-print(getWeatherData().getCurrentWeatherData("Ludhiana"))
-getWeatherData().getForecastWeatherData("Ludhiana")
+# print(getWeatherData().getCurrentWeatherData("Ludhiana"))
+# getWeatherData().getForecastWeatherData("Ludhiana")

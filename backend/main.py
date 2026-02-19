@@ -10,14 +10,15 @@ from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 from dotenv import load_dotenv
 from Auth.auth import OTP, JWTOperations
-from Utils.db_operations import addExpertToDB, addOTP, get_suggestion, getChatSession, getExpertRequests, getOtp, getUser, get_crop_data_from_chat_sessions, addExpertReply
-from models import User, UserReq, UserOTPReq, CropData, ChatSession, ExpertData, Reply
+from Utils.db_operations import addExpertToDB, addOTP, get_suggestion, getChatSession, getExpertRequests, getOtp, getUser, get_crop_data_from_chat_sessions, addExpertReply, getStatesFromDB, getDistrictsFromDB, getCitiesFromDB
+from models import User, UserReq, UserOTPReq, CropData, ChatSession, ExpertData, Reply, LocationData
 from database import get_session, init_db
 from data_gen.weekly_sug_extract import extract_and_load_weekly_advice
 from LLM.multi_tool_agent.agent import crop_query_agent, query_agent
 from LLM.retrieval.get_model import get_model
 from LLM.retrieval import retrieve_answer
-from fastapi.security import HTTPBearer, HTTPAuthCredentials
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from Utils.weatherData import WeatherData
 
 
 load_dotenv()
@@ -28,15 +29,15 @@ security = HTTPBearer()
 async def lifespan(app: FastAPI):
     # Initialize database tables
     print("Initializing database...")
-    loop = asyncio.get_event_loop()
-    with ThreadPoolExecutor() as executor:
-        await loop.run_in_executor(executor, init_db)
+    # loop = asyncio.get_event_loop()
+    # with ThreadPoolExecutor() as executor:
+    #     await loop.run_in_executor(executor, init_db)
     
     # Load model in thread pool to avoid blocking
-    print("Loading SentenceTransformer model...")
-    with ThreadPoolExecutor() as executor:
-        await loop.run_in_executor(executor, get_model)
-    print("Model loaded successfully!")
+    # print("Loading SentenceTransformer model...")
+    # with ThreadPoolExecutor() as executor:
+    #     await loop.run_in_executor(executor, get_model)
+    # print("Model loaded successfully!")
     
     yield
     print("App shutdown")
@@ -243,6 +244,45 @@ def addExpert(expert: ExpertData, session=Depends(get_session)):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to add expert"
         )
+
+
+#Weather Feature
+@app.get("/getDistrict")
+def getDistrict(state: str, session=Depends(get_session)):
+    try:
+        return getDistrictsFromDB(session, state)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to load data"
+        )
+
+
+@app.get("/getCity")
+def getCity(district: str, q: str = "", session=Depends(get_session)):
+    try:
+        return getCitiesFromDB(session, district, query=q)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to load data"+e
+        )
+
+@app.get("/getWeatherData")
+def getWeatherData(lat: float, lon: float, session=Depends(get_session)):
+    try:
+        x = WeatherData.getForecastWeatherData(lat, lon)
+        print(x)
+        return x
+    except Exception as e:
+        print(e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to load data"
+        )
+
+        
+
 
 
 

@@ -1,4 +1,4 @@
-from models import OTPCode, UserReq, User, ChatSession, CropAdvice, Expert, Reply, Message, ExpertRequests
+from models import OTPCode, UserReq, User, ChatSession, CropAdvice, Expert, Reply, Message, ExpertRequests, Locations
 from sqlmodel import Session
 from database import engine
 from sqlalchemy import select, and_, func
@@ -267,4 +267,22 @@ def getMessage(session: Session, sessionId):
 def getChatSession(session: Session, sessionId):
     return session.query(ChatSession).filter(ChatSession.id == sessionId).first()
 
+def getDistrictsFromDB(session: Session, state):
+    rows = session.query(Locations.district).filter(Locations.state.ilike(state)).distinct().order_by(Locations.district).all()
+    return [row[0] for row in rows]
 
+def getStatesFromDB(session: Session):
+    rows = session.query(Locations.state).distinct().order_by(Locations.state).all()
+    return [row[0] for row in rows]
+
+def getCitiesFromDB(session: Session, district: str, query: str = ""):
+    rows = (
+        session.query(Locations.city)
+        .filter(Locations.district.ilike(district))
+        .filter(Locations.city.ilike(f"{query}%") if query else True)
+        .distinct()
+        .order_by(Locations.city)
+        .limit(10)
+        .all()
+    )
+    return [row[0] for row in rows]

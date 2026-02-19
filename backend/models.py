@@ -28,6 +28,10 @@ class Reply(BaseModel):
     sessionId: uuid.UUID
     reply: str
 
+class LocationData(BaseModel):
+    lat: float
+    lon: float
+
 
 #Database Models
 class User(Base):
@@ -104,3 +108,12 @@ class CropAdvice(Base):
     def __repr__(self):
         return f"<CropAdvice(district='{self.district}', crop='{self.crop}', problem_disease='{self.problem_disease}')>"
 
+class Locations(Base):
+    __tablename__ = "locations"
+    __table_args__ = {'extend_existing': True}
+
+    pincode  = Column(String(6), primary_key=True)
+    city     = Column(String(50), primary_key=True)
+    district = Column(String(50), nullable=False)
+    state    = Column(String(50), nullable=False)
+    country  = Column(String(50), nullable=False)

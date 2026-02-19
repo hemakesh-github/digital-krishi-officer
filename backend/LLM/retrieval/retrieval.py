@@ -6,7 +6,7 @@ MODEL_NAME = 'all-MiniLM-L6-v2'
 COLLECTION_NAME = 'kcc_knowledge_base'
 
 # Get the model once at module level (will use cached instance after startup preloading)
-_model = get_model()
+# _model = get_model()
 
 client = QdrantClient(
     url="https://2d2879b8-2fe8-466e-9162-61e89208a79a.europe-west3-0.gcp.cloud.qdrant.io:6333",
