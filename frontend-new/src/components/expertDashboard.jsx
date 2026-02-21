@@ -1,10 +1,8 @@
-import WeatherCard from '../components/WeatherCard'
-import DiseasePredictionCard from '../components/DiseasePredictionCard'
-import CropAdviceCard from '../components/CropAdviceCard'
+import React from 'react'
 
-export default function Home() {
-    return (
-        <div className="animate-fade-in p-6 lg:p-8">
+export default function expertDashboard() {
+  return (
+    <div className="animate-fade-in p-6 lg:p-8">
             <div className="mb-8">
                 <h1 className="text-2xl lg:text-3xl font-extrabold tracking-tight text-foreground">
                     Dashboard
@@ -14,10 +12,8 @@ export default function Home() {
                 </p>
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-                <WeatherCard />
-                <DiseasePredictionCard />
-                <CropAdviceCard />
+                
             </div>
         </div>
-    )
+  )
 }

@@ -13,3 +13,7 @@ export const removeToken = async () => {
 export const checkAuth = async () => {
     return localStorage.getItem('token') !== null;
 }
+
+export const logout = async () => {
+    localStorage.removeItem('token');
+}

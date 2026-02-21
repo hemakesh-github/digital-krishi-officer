@@ -1,5 +1,4 @@
 from datetime import datetime, timedelta, timezone
-from http.client import HTTPException
 import secrets
 import string
 import bcrypt
@@ -9,7 +8,7 @@ from Utils.db_operations import addOTP, getOtp, setOtpUsed
 from fastapi.security import OAuth2PasswordBearer
 import jwt
 from jwt.exceptions import InvalidTokenError
-from fastapi import status
+from fastapi import status, HTTPException
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/verify")
 
@@ -52,6 +51,7 @@ class OTP:
 
 class JWTOperations: 
 
+    @staticmethod
     def create_access_token(phno: str, expires_delta: timedelta | None = None):
         to_encode = {'phno': phno}
         if expires_delta:
@@ -62,6 +62,7 @@ class JWTOperations:
         encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
         return encoded_jwt
 
+    @staticmethod
     def create_refresh_token(phno: str):
         to_encode = {'phno': phno}
         expire = datetime.now(timezone.utc) + timedelta(days=1)
@@ -69,6 +70,7 @@ class JWTOperations:
         encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
         return encoded_jwt
 
+    @staticmethod
     def decode_jwt(token):
         credential_exception = HTTPException(
             status_code = status.HTTP_401_UNAUTHORIZED,
@@ -77,7 +79,7 @@ class JWTOperations:
         )
         try: 
             payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-            mobileNo = payload.get("sub")
+            mobileNo = payload.get("phno")
             if mobileNo is None:
                 raise credential_exception
         except InvalidTokenError:

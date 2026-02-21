@@ -1,4 +1,5 @@
 import { Routes, Route } from 'react-router-dom'
+import AppLayout from './components/AppLayout'
 import Login from './pages/Login'
 import Home from './pages/Home'
 import DiseasePrediction from './pages/DiseasePrediction'
@@ -10,13 +11,40 @@ import Chat from './pages/Chat'
 function App() {
     return (
         <Routes>
-            <Route path="/" element={<Home />} />
+            {/* Login — no sidebar */}
             <Route path="/login" element={<Login />} />
-            <Route path="/disease" element={<DiseasePrediction />} />
-            <Route path="/crop-advice" element={<CropAdvice />} />
-            <Route path="/history" element={<History />} />
-            <Route path="/disease-result" element={<DiseaseResult />} />
-            <Route path="/chat" element={<Chat />} />
+
+            {/* All other pages — wrapped in sidebar layout */}
+            <Route path="/" element={
+                <AppLayout>
+                    <Home />
+                </AppLayout>
+            } />
+            <Route path="/disease" element={
+                <AppLayout>
+                    <DiseasePrediction />
+                </AppLayout>
+            } />
+            <Route path="/crop-advice" element={
+                <AppLayout>
+                    <CropAdvice />
+                </AppLayout>
+            } />
+            <Route path="/history" element={
+                <AppLayout>
+                    <History />
+                </AppLayout>
+            } />
+            <Route path="/disease-result" element={
+                <AppLayout>
+                    <DiseaseResult />
+                </AppLayout>
+            } />
+            <Route path="/chat" element={
+                <AppLayout>
+                    <Chat />
+                </AppLayout>
+            } />
         </Routes>
     )
 }

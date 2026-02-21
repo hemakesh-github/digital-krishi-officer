@@ -1,118 +1,159 @@
 import { useState, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 
-// TODO: Replace with real API call
-// async function predictDisease(imageFile) { ... }
-
-const COMMON_DISEASES = ['Leaf Blight', 'Rust', 'Powdery Mildew', 'Root Rot', 'Mosaic Virus']
+const DUMMY_RESULT = {
+    disease: 'Leaf Blight',
+    confidence: 87,
+    severity: 'Moderate',
+    description: 'Leaf Blight is a fungal disease caused by Helminthosporium oryzae. It typically affects leaves, causing brown lesions with yellow halos that coalesce under humid conditions.',
+    treatments: [
+        { title: 'Fungicide Application', detail: 'Spray Mancozeb 75 WP @ 2.5 g/L or Carbendazim 50 WP @ 1 g/L. Repeat every 10–14 days.' },
+        { title: 'Remove Infected Material', detail: 'Remove and destroy heavily infected leaves to reduce disease spread.' },
+        { title: 'Preventive Measures', detail: 'Maintain proper plant spacing. Avoid overhead irrigation to keep leaves dry.' },
+    ],
+}
 
 export default function DiseasePredictionCard() {
+    const navigate = useNavigate()
     const [image, setImage] = useState(null)
     const [preview, setPreview] = useState(null)
     const [dragging, setDragging] = useState(false)
-    const inputRef = useRef()
+    const [loading, setLoading] = useState(false)
+    const [result, setResult] = useState(null)
+    const uploadRef = useRef()
+    const cameraRef = useRef()
 
     const handleFile = (file) => {
         if (!file || !file.type.startsWith('image/')) return
-        setImage(file)
-        setPreview(URL.createObjectURL(file))
+        setImage(file); setPreview(URL.createObjectURL(file)); setResult(null)
     }
-
-    const onDrop = (e) => {
-        e.preventDefault()
-        setDragging(false)
-        handleFile(e.dataTransfer.files[0])
-    }
-
+    const onDrop = (e) => { e.preventDefault(); setDragging(false); handleFile(e.dataTransfer.files[0]) }
     const clearImage = () => {
-        setImage(null)
-        setPreview(null)
-        if (inputRef.current) inputRef.current.value = ''
+        setImage(null); setPreview(null); setResult(null)
+        if (uploadRef.current) uploadRef.current.value = ''
+        if (cameraRef.current) cameraRef.current.value = ''
     }
 
-    const handlePredict = () => {
-        // TODO: call predictDisease(image) and handle response
-        alert('API integration pending')
+    const handlePredict = async () => {
+        if (!image) return
+        setLoading(true)
+        await new Promise(r => setTimeout(r, 1800))
+        setResult(DUMMY_RESULT)
+        setLoading(false)
+    }
+
+    const handleViewDetails = () => {
+        navigate('/disease', {
+            state: { previewUrl: preview, result }
+        })
     }
 
     return (
-        <div className="bg-white rounded-2xl shadow-md overflow-hidden flex flex-col hover:-translate-y-1 hover:shadow-xl transition-all duration-200">
+        <div className="bg-card rounded-xl border border-border flex flex-col overflow-hidden">
 
-            {/* Header band */}
-            <div className="bg-linear-to-r from-rose-500 to-red-600 px-5 py-4 flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center text-lg">🔬</div>
+            {/* Header */}
+            <div className="px-5 py-4 border-b border-border flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center text-base">🔬</div>
                 <div>
-                    <div className="font-bold text-white text-sm">Disease Prediction</div>
-                    <div className="text-rose-100 text-xs mt-0.5">Upload a crop photo for AI diagnosis</div>
+                    <div className="font-semibold text-foreground text-sm">Disease Detection</div>
+                    <div className="text-muted-fg text-xs mt-0.5">Upload or capture a crop photo for AI diagnosis</div>
                 </div>
             </div>
 
-            <div className="p-5 flex flex-col gap-4 flex-1">
+            <div className="p-4 flex flex-col gap-3">
 
-                {/* Drop zone / Preview */}
+                {/* Preview / Drop zone */}
                 {preview ? (
-                    <div className="relative rounded-xl overflow-hidden border-2 border-rose-200 group">
-                        <img src={preview} alt="preview" className="w-full h-44 object-cover" />
+                    <div className="relative rounded-xl overflow-hidden border border-border group">
+                        <img src={preview} alt="preview" className="w-full h-36 object-cover" />
                         <button
                             onClick={clearImage}
-                            className="absolute top-2 right-2 bg-white/90 hover:bg-white text-gray-700 rounded-full w-7 h-7 flex items-center justify-center text-xs shadow-md cursor-pointer border-none transition-all duration-150 opacity-0 group-hover:opacity-100"
-                            title="Remove image"
+                            className="absolute top-2 right-2 bg-white/90 hover:bg-white text-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs shadow cursor-pointer border-none transition-all"
                         >✕</button>
-                        <div className="absolute bottom-0 left-0 right-0 bg-linear-to-t from-black/60 to-transparent px-3 py-2">
+                        <div className="absolute bottom-0 left-0 right-0 bg-linear-to-t from-black/60 to-transparent px-3 py-1.5">
                             <p className="text-white text-xs truncate font-medium">{image?.name}</p>
                         </div>
                     </div>
                 ) : (
                     <div
-                        onClick={() => inputRef.current?.click()}
                         onDragOver={e => { e.preventDefault(); setDragging(true) }}
                         onDragLeave={() => setDragging(false)}
                         onDrop={onDrop}
-                        className={`h-44 rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-2 cursor-pointer transition-all duration-200
-                            ${dragging
-                                ? 'border-rose-400 bg-rose-50 scale-[1.02]'
-                                : 'border-gray-200 bg-gray-50 hover:border-rose-300 hover:bg-rose-50'
-                            }`}
+                        className={`rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-3 py-6 transition-all duration-200
+                            ${dragging ? 'border-foreground bg-muted scale-[1.02]' : 'border-border bg-muted'}`}
                     >
-                        <span className="text-4xl">{dragging ? '🎯' : '📷'}</span>
-                        <p className="text-sm font-semibold text-gray-600">
-                            Drop image here or <span className="text-rose-500">browse</span>
+                        <span className="text-3xl">{dragging ? '🎯' : '🌿'}</span>
+                        <p className="text-xs text-muted-fg text-center leading-relaxed">
+                            Drag &amp; drop an image here, or use<br />the buttons below
                         </p>
-                        <p className="text-xs text-gray-400">JPG · PNG · WEBP</p>
+                        <div className="flex gap-2 w-full px-4">
+                            <button type="button" onClick={() => uploadRef.current?.click()}
+                                className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl border border-border bg-card text-xs font-semibold text-foreground hover:border-foreground/40 transition-all cursor-pointer">
+                                📁 Browse Files
+                            </button>
+                            <button type="button" onClick={() => cameraRef.current?.click()}
+                                className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl border border-border bg-card text-xs font-semibold text-foreground hover:border-foreground/40 transition-all cursor-pointer">
+                                📷 Take Photo
+                            </button>
+                        </div>
                     </div>
                 )}
 
-                <input
-                    ref={inputRef}
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={e => handleFile(e.target.files[0])}
-                />
+                <input ref={uploadRef} type="file" accept="image/*" className="hidden" onChange={e => handleFile(e.target.files[0])} />
+                <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={e => handleFile(e.target.files[0])} />
 
-                {/* Predict button */}
-                <button
-                    onClick={handlePredict}
-                    disabled={!image}
-                    className={`w-full py-2.5 rounded-xl text-white font-semibold text-sm transition-all duration-150 border-none
-                        ${image
-                            ? 'bg-rose-500 hover:bg-rose-600 active:scale-95 cursor-pointer shadow-sm shadow-rose-200'
-                            : 'bg-rose-200 cursor-not-allowed'
-                        }`}
-                >
-                    🔍 Predict Disease
-                </button>
-
-                {/* Common disease tags */}
-                <div className="flex flex-col gap-1.5">
-                    <span className="text-[11px] text-gray-400 font-medium">💡 Common diseases detected:</span>
-                    <div className="flex flex-wrap gap-1.5">
-                        {COMMON_DISEASES.map(tag => (
-                            <span key={tag} className="text-[11px] bg-rose-50 text-rose-600 px-2.5 py-1 rounded-full font-medium border border-rose-100">
-                                {tag}
-                            </span>
-                        ))}
+                {/* Mini result */}
+                {result && !loading && (
+                    <div className="bg-muted rounded-xl border border-border p-3 flex items-center justify-between gap-3">
+                        <div className="min-w-0">
+                            <p className="text-[10px] text-muted-fg font-semibold uppercase tracking-wider">Detected</p>
+                            <p className="text-sm font-bold text-foreground truncate">{result.disease}</p>
+                            <p className="text-[11px] text-muted-fg mt-0.5">{result.confidence}% confidence · {result.severity}</p>
+                        </div>
+                        {/* Confidence ring */}
+                        <div className="shrink-0 w-10 h-10 relative">
+                            <svg viewBox="0 0 36 36" className="w-10 h-10 -rotate-90">
+                                <circle cx="18" cy="18" r="15" fill="none" stroke="currentColor" strokeWidth="3" className="text-border" />
+                                <circle cx="18" cy="18" r="15" fill="none" stroke="currentColor" strokeWidth="3"
+                                    strokeDasharray={`${result.confidence * 0.942} 94.2`}
+                                    className="text-foreground transition-all duration-700" />
+                            </svg>
+                            <span className="absolute inset-0 flex items-center justify-center text-[9px] font-bold text-foreground">{result.confidence}%</span>
+                        </div>
                     </div>
-                </div>
+                )}
+
+                {/* Predict / View Details button */}
+                {result && !loading ? (
+                    <button
+                        onClick={handleViewDetails}
+                        className="w-full py-2.5 rounded-xl font-semibold text-sm bg-foreground text-card hover:bg-foreground/90 active:scale-95 cursor-pointer border-none flex items-center justify-center gap-2 transition-all duration-150"
+                    >
+                        View Full Details
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5">
+                            <path d="M5 12h14" /><path d="m12 5 7 7-7 7" />
+                        </svg>
+                    </button>
+                ) : (
+                    <button
+                        onClick={handlePredict}
+                        disabled={!image || loading}
+                        className={`w-full py-2.5 rounded-xl font-semibold text-sm transition-all duration-150 border-none flex items-center justify-center gap-2
+                            ${image && !loading
+                                ? 'bg-foreground text-card hover:bg-foreground/90 active:scale-95 cursor-pointer'
+                                : 'bg-muted text-muted-fg cursor-not-allowed border border-border'}`}
+                    >
+                        {loading ? (
+                            <>
+                                <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                                </svg>
+                                Analyzing...
+                            </>
+                        ) : 'Predict Disease'}
+                    </button>
+                )}
             </div>
         </div>
     )

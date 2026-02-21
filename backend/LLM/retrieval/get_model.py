@@ -1,13 +1,17 @@
-from sentence_transformers import SentenceTransformer
-import vertexai
-from vertexai import model_garden
-import os
+# from sentence_transformers import SentenceTransformer
+# import vertexai
+# from vertexai import model_garden
+# import os
 
 _model = None
 
 def get_model(MODEL_NAME="paraphrase-multilingual-MiniLM-L12-v2"):
     global _model
     if _model is None:
+        from sentence_transformers import SentenceTransformer
+        import vertexai
+        from vertexai import model_garden
+        import os
         _model = SentenceTransformer("C:\\Documents\\farmerAssist\\backend\\LLM\\retrieval\\models\\minilm")
         # Create directory if it doesn't exist
         # os.makedirs("models", exist_ok=True)

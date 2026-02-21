@@ -1,5 +1,4 @@
 import { useLocation, useNavigate } from 'react-router-dom'
-import Navbar from '../components/Navbar'
 
 // TODO: fetch real result from API using id from useParams when integrating
 
@@ -10,7 +9,6 @@ export default function DiseaseResult() {
     if (!data) {
         return (
             <div className="min-h-screen bg-linear-to-br from-rose-50 to-red-50 font-sans">
-                <Navbar />
                 <div className="max-w-2xl mx-auto px-4 sm:px-6 pt-16 sm:pt-20 flex flex-col items-center gap-4 text-center">
                     <span className="text-5xl">🔍</span>
                     <h2 className="text-xl font-bold text-gray-700">No result data found</h2>

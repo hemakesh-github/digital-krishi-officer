@@ -1,6 +1,6 @@
 from typing import Optional, List
 from pydantic import BaseModel
-from sqlalchemy import Column, ForeignKey, Integer, Numeric, String, TIMESTAMP, Text, text, Boolean, BigInteger
+from sqlalchemy import Column, ForeignKey, Integer, Numeric, String, TIMESTAMP, Text, text, Boolean, BigInteger, Float
 from sqlalchemy.orm import declarative_base, relationship
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 import uuid
@@ -10,10 +10,12 @@ Base = declarative_base()
 
 class UserOTPReq(BaseModel):
     mobileNo: str
+    userType: Optional[str] = None
 
 class UserReq(BaseModel):
     mobileNo: str 
     otp: Optional[str] = None
+    userType: Optional[str] = None
 
 class CropData(BaseModel):
     crop: str
@@ -24,9 +26,11 @@ class ExpertData(BaseModel):
     mobileNo: str
     name: str
 
-class Reply(BaseModel):
+
+class MessageData(BaseModel):
     sessionId: uuid.UUID
-    reply: str
+    content: str
+    role: str
 
 class LocationData(BaseModel):
     lat: float
@@ -117,3 +121,15 @@ class Locations(Base):
     district = Column(String(50), nullable=False)
     state    = Column(String(50), nullable=False)
     country  = Column(String(50), nullable=False)
+
+
+class DiseaseDetection(Base):
+    __tablename__ = "disease_detection"
+
+    id = Column(Integer, primary_key=True, index=True)
+    userId = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"))
+    image = Column(String(255), nullable=False)
+    disease = Column(String(255), nullable=False)
+    confidence = Column(Float, nullable=False)
+    created_at = Column(TIMESTAMP, server_default=text("CURRENT_TIMESTAMP"))
+

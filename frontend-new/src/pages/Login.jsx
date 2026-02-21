@@ -1,7 +1,8 @@
-import React, { useState } from 'react'
+import React, { useState, useContext } from 'react'
 import { verifyOtp, genOtp } from '../api_services/api_services'
+import { UserContextData } from '../context/UserContext'
+import { useNavigate } from 'react-router-dom'
 import { setToken } from '../utils/Auth'
-
 const Login = () => {
     const userTypes = ['Farmer', 'Expert', 'Admin']
     const [userType, setUserType] = useState(userTypes[0])
@@ -9,7 +10,8 @@ const Login = () => {
     const [otp, setOtp] = useState('')
     const [state, setState] = useState(0) // 0: enter mobile, 1: enter otp
     const [error, setError] = useState('')
-
+    const { setMobileNo, setUserId, setType } = useContext(UserContextData);
+    const navigate = useNavigate();
     const handleSubmit = async () => {
         if (state === 0) {
             if (!/^\d{10}$/.test(mobileNumber)) {
@@ -17,7 +19,7 @@ const Login = () => {
                 return
             }
             try {
-                const response = await genOtp(mobileNumber)
+                const response = await genOtp(mobileNumber, userType)
                 if (response && response.success) {
                     console.log('OTP generated successfully')
                 } else {
@@ -37,9 +39,14 @@ const Login = () => {
                 return
             }
             try {
-                const response = await verifyOtp(mobileNumber, otp)
+                const response = await verifyOtp(mobileNumber, otp, userType)
                 if (response && response.success) {
-                    await setToken(response.access_token)
+                    console.log(response)
+                    setToken(response.access_token)
+                    setMobileNo(response.mobile_number)
+                    setUserId(response.userId)
+                    setType(response.userType)
+                    navigate('/')
                     console.log('OTP verified successfully')
                 } else {
                     setError('Invalid OTP. Please try again.')

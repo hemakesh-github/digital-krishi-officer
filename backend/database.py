@@ -16,7 +16,7 @@ def init_db():
     """Initialize database tables. Call this during app startup."""
     try:
         print("Creating database tables...")
-        # Base.metadata.create_all(engine)
+        Base.metadata.create_all(engine)
         print("Database tables created successfully")
     except Exception as e:
         print(f"Database initialization failed: {e}")

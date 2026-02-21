@@ -2,11 +2,11 @@ import os
 import requests
 from dotenv import load_dotenv
 load_dotenv()
-class WeatherData:
-    URL =  os.getenv("WEATHER_API_URL")
-    API_KEY = os.getenv("WEATHER_API_KEY")
-    
+URL =  os.getenv("WEATHER_API_URL")
+API_KEY = os.getenv("WEATHER_API_KEY")
 
+class WeatherData:
+    @staticmethod
     def getCurrentWeatherData(lat, lon):
         # Logic to fetch weather data for the given location
         
@@ -16,11 +16,12 @@ class WeatherData:
             'appid': API_KEY
         }
         data = requests.get(URL, params=params).json()
-        parsedData = self.parseResponse([data])
-        data = [parsedData, self.weather_advice(parsedData[0]["temperature"], parsedData[0]["humidity"], parsedData[0]["wind"], parsedData[0]["rain"])]
+        parsedData = WeatherData.parseResponse([data])
+        data = [parsedData, WeatherData.weather_advice(parsedData[0]["temperature"], parsedData[0]["humidity"], parsedData[0]["wind"], parsedData[0]["rain"])]
         return data
     
-    def getForecastWeatherData(self, lat, lon):
+    @staticmethod
+    def getForecastWeatherData(lat, lon):
         # Logic to fetch forecast weather data for the given location
         params = {
             'lat': lat,  # Placeholder latitude
@@ -29,13 +30,14 @@ class WeatherData:
         }
         data = requests.get(URL + "/forecast", params=params).json()
 
-        parsedData = self.parseResponse(data)
+        parsedData = WeatherData.parseResponse(data)
         data = data[0]
-        data = [parsedData, self.weather_advice(parsedData[0]["temperature"], parsedData[0]["humidity"], parsedData[0]["wind"], parsedData[0]["rain"])]
+        data = [parsedData,  WeatherData.weather_advice(parsedData[0]["temperature"], parsedData[0]["humidity"], parsedData[0]["wind"], parsedData[0]["rain"])]
         return data
 
 
-    def parseResponse(self, data):
+    @staticmethod
+    def parseResponse(data):
         # Logic to parse the weather data response and extract relevant information
         # print(data)
         if (len(data) == 0):
@@ -59,13 +61,15 @@ class WeatherData:
                         
         return parsed
 
-    def getLatLong(self, location: str):
+    @staticmethod
+    def getLatLong( location: str):
         # Logic to fetch latitude for the given location
         
 
         return (23.0153, 70.0)
 
-    def weather_advice(self, temp, humidity, wind, rain):
+    @staticmethod
+    def weather_advice( temp, humidity, wind, rain):
 
         # Heavy Rain
         if rain > 10:

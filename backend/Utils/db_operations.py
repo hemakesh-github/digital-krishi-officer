@@ -1,4 +1,4 @@
-from models import OTPCode, UserReq, User, ChatSession, CropAdvice, Expert, Reply, Message, ExpertRequests, Locations
+from models import OTPCode, UserReq, User, ChatSession, CropAdvice, Expert, Message, ExpertRequests, Locations, MessageData, DiseaseDetection
 from sqlmodel import Session
 from database import engine
 from sqlalchemy import select, and_, func
@@ -139,8 +139,11 @@ def addUser(session: Session, user: UserReq):
         return None
 
 
-def getUser(session: Session, mobileNo: str):
+def getUserFromDB(session: Session, mobileNo: str):
     return session.query(User).filter(User.mobileNo == mobileNo).first()
+
+def getExpert(session: Session, mobileNo: str):
+   return session.query(User).filter(User.mobileNo == mobileNo, User.role == "expert").join(Expert, User.id == Expert.user_id).first()
 
 
 def addExpertToDB(session: Session, mobileNo: str, name: str):
@@ -171,31 +174,20 @@ def addExpertToDB(session: Session, mobileNo: str, name: str):
         raise
 
 
-def getExpert(session: Session, user_id: int):
-    return session.query(Expert).filter(Expert.user_id == user_id).first()
 
-def getExpert(session: Session, mobileNo: str):
-    return session.query(Expert).filter(Expert.mobileNo == Expert.mobileNo).first()
-
-
-def addExpertReply(session: Session, reply: Reply):
+def addMessage(session: Session, message: MessageData):
     try:
-        chat_session = session.query(ChatSession).filter(ChatSession.id == reply.sessionId).first()
-        if not chat_session:
-            print(f"No chat session found with ID: {reply.sessionId}")
-            return False
-        
-        expert_message = Message(
-            session_id=reply.sessionId,
-            role="expert",
-            content=reply.reply
+        message = Message(
+            session_id=message.sessionId,
+            role=message.role,
+            content=message.content
         )
-        session.add(expert_message)
+        session.add(message)
         session.commit()
         return True
     except Exception as e:
         session.rollback()
-        print(f"Error adding expert reply: {e}")
+        print(f"Error adding message: {e}")
         return False
     
 def addExpertRequest(session: Session, sessionId):
@@ -259,13 +251,30 @@ def deleteExpertRequest(session: Session, sessionId):
         print(f"Error deleting expert request: {e}")
         return False
     
-def getMessage(session: Session, sessionId):
-    message = session.query(Message).filter(Message.session_id == sessionId).order_by(Message.created_at.desc()).first()
-    return message.content if message else None
+def getMessages(session: Session, sessionId):
+    messages = session.query(Message).filter(Message.session_id == sessionId).order_by(Message.created_at.asc()).all()
+    return [message for message in messages]
 
 
 def getChatSession(session: Session, sessionId):
     return session.query(ChatSession).filter(ChatSession.id == sessionId).first()
+
+def getChatSessions(session: Session, userId: int):
+    results = session.query(ChatSession).filter(ChatSession.user_id == userId).order_by(ChatSession.created_at.desc()).all()
+    ans = []
+    for result in results:
+        ans.append({
+            "id": result.id,
+            "cropdata": result.cropdata,
+            "user_id": result.user_id,
+            "created_at": result.created_at,
+            "satisfied": result.satisfied,
+            "closed": result.closed,
+            "escalated": result.escalated,
+            "type": "crop_advice"
+        })
+    return ans
+
 
 def getDistrictsFromDB(session: Session, state):
     rows = session.query(Locations.district).filter(Locations.state.ilike(state)).distinct().order_by(Locations.district).all()
@@ -286,3 +295,34 @@ def getCitiesFromDB(session: Session, district: str, query: str = ""):
         .all()
     )
     return [row[0] for row in rows]
+
+
+def addDiseaseDetection(session: Session, userId: int, result: dict, image_path: str):
+    try:
+        disease_detection = DiseaseDetection(
+            userId=userId,
+            image=image_path,
+            disease=result["disease"],
+            confidence=result["confidence"]
+        )
+        session.add(disease_detection)
+        session.commit()
+        return True
+    except Exception as e:
+        session.rollback()
+        print(f"Error adding disease detection: {e}")
+        return False
+
+def getDiseaseDetectionHistory(session: Session, userId: int):
+    results = session.query(DiseaseDetection).filter(DiseaseDetection.userId == userId).all()
+    ans = []
+    for result in results:
+        ans.append({
+            "id": result.id,
+            "image": result.image,
+            "disease": result.disease,
+            "confidence": result.confidence,
+            "created_at": result.created_at,
+            "type": "disease_detection"
+        })
+    return ans  

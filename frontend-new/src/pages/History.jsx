@@ -1,199 +1,212 @@
+import { useState, useEffect, useContext } from "react";
 import { useNavigate } from 'react-router-dom'
-import Navbar from '../components/Navbar'
+import { getHistory } from "../api_services/api_services";
+import { UserContextData } from "../context/UserContext";
 
-// TODO: Replace with real API call
-// async function fetchHistory(token) { return await api.get('/history') }
+const MicroscopeIcon = () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M6 18h8" /><path d="M3 21h18" /><path d="M14 21v-4a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v4" />
+        <path d="M14 7l-1-4" /><path d="M10 7l1-4" /><circle cx="12" cy="7" r="4" />
+    </svg>
+);
 
-const DUMMY_HISTORY = [
-    {
-        id: 1,
-        type: 'disease',
-        crop: 'Paddy',
-        query: 'Uploaded leaf image',
-        result: 'Leaf Blight detected (92% confidence)',
-        location: null,
-        date: '2026-02-18T10:32:00',
-    },
-    {
-        id: 2,
-        type: 'advice',
-        crop: 'Cotton',
-        query: 'Leaves turning yellow and dropping early, possible pest attack',
-        result: 'Likely Aphid infestation. Spray Imidacloprid 0.3ml/L. Ensure proper drainage.',
-        location: 'Guntur, Andhra Pradesh',
-        date: '2026-02-17T15:10:00',
-    },
-    {
-        id: 3,
-        type: 'disease',
-        crop: 'Tomato',
-        query: 'Uploaded leaf image',
-        result: 'Early Blight detected (87% confidence)',
-        location: null,
-        date: '2026-02-16T09:05:00',
-    },
-    {
-        id: 4,
-        type: 'advice',
-        crop: 'Wheat',
-        query: 'Stunted growth, soil looks dry despite irrigation',
-        result: 'Possible Zinc deficiency. Apply Zinc Sulphate 25kg/ha. Check irrigation uniformity.',
-        location: 'Ludhiana, Punjab',
-        date: '2026-02-15T11:48:00',
-    },
-    {
-        id: 5,
-        type: 'disease',
-        crop: 'Maize',
-        query: 'Uploaded leaf image',
-        result: 'Northern Leaf Blight detected (78% confidence)',
-        location: null,
-        date: '2026-02-14T14:22:00',
-    },
-]
+const LeafIcon = () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10z" />
+        <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12" />
+    </svg>
+);
 
-const TYPE_META = {
-    disease: {
-        label: 'Disease Prediction',
-        icon: '🔬',
-        badgeCls: 'bg-rose-50 text-rose-600 border-rose-100',
-        borderCls: 'border-l-rose-400',
-        iconBg: 'bg-rose-50',
-    },
-    advice: {
-        label: 'Crop Advice',
-        icon: '🌿',
-        badgeCls: 'bg-green-50 text-green-700 border-green-100',
-        borderCls: 'border-l-green-500',
-        iconBg: 'bg-green-50',
-    },
+const PinIcon = () => (
+    <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
+    </svg>
+);
+
+const ArrowIcon = () => (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M5 12h14" /><path d="m12 5 7 7-7 7" />
+    </svg>
+);
+
+function ConfidenceBadge({ value }) {
+    const color = value >= 90 ? "text-red-600 bg-red-100" : value >= 80 ? "text-orange-600 bg-orange-100" : "text-amber-600 bg-amber-100";
+    return (
+        <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${color}`}>
+            {value}%
+        </span>
+    );
 }
 
-function formatDate(iso) {
-    const d = new Date(iso)
-    return d.toLocaleString('en-IN', {
-        day: '2-digit', month: 'short', year: 'numeric',
-        hour: '2-digit', minute: '2-digit', hour12: true,
-    })
+
+function HistoryRow({ item, handleDetails }) {
+    const isDisease = item.type === "disease_detection";
+
+
+
+    return (
+        <div className="group flex items-center gap-4 bg-white hover:bg-slate-50 border-b border-slate-100 px-4 py-3 transition-colors last:border-0 first:rounded-t-xl last:rounded-b-xl">
+            {/* Icon Column */}
+            <div className={`flex-none w-8 h-8 rounded-lg flex items-center justify-center ${isDisease ? 'bg-red-50 text-red-500' : 'bg-green-50 text-green-600'}`}>
+                {isDisease ? <MicroscopeIcon /> : <LeafIcon />}
+            </div>
+
+            {/* Crop Column */}
+            <div className="flex-none w-24">
+                <div className="text-sm font-bold text-slate-900 truncate">{item.crop}</div>
+                {(item.location && item.location != "string") && (
+                    <div className="flex items-center gap-1 text-[10px] text-slate-400 font-medium lowercase italic ml-5">
+                        <PinIcon /> {item.location.length > 10 ? item.location.slice(0, 10) + "..." : item.location}
+                    </div>
+                )}
+            </div>
+
+            {/* Result Column - Takes available space */}
+            {isDisease ?
+                <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+
+                        <span className={`text-[13px] font-semibold truncate 'text-slate-700'}`}>
+                            {item.result}
+                        </span>
+                        <ConfidenceBadge value={item.confidence} />
+                    </div>
+                </div> : <div className="flex-1 min-w-0"></div>}
+
+            {/* Date Column */}
+            <div className="flex-none w-28 text-right hidden sm:block">
+                <div className="text-[11px] font-bold text-slate-400 uppercase tracking-tighter">{item.date}</div>
+                <div className="text-[10px] text-slate-300 tabular-nums">{item.time}</div>
+            </div>
+
+            {/* Action Column */}
+            <div className="flex-none">
+                <button className={`w-28 h-7 py-4 rounded-full flex items-center justify-center border transition-all hover:scale-110 cursor-pointer active:scale-90 ${isDisease ? 'border-red-200 text-red-500 hover:bg-red-500 hover:text-white' : 'border-green-200 text-green-600 hover:bg-green-600 hover:text-white'}`} onClick={() => handleDetails(item)}>
+                    Details
+                    <ArrowIcon />
+                </button>
+            </div>
+        </div>
+    );
+}
+
+function SectionHeader({ label, count, colorClass }) {
+    return (
+        <div className="flex items-center gap-3 mb-3 px-1">
+            <h2 className={`text-xs font-black uppercase tracking-[0.2em] ${colorClass}`}>
+                {label}
+            </h2>
+            <span className="h-px flex-1 bg-slate-100" />
+            <span className="text-[10px] font-bold text-slate-300">{count} ITEMS</span>
+        </div>
+    );
 }
 
 export default function History() {
-    const navigate = useNavigate()
+    const navigate = useNavigate();
 
-    const handleViewDetails = (item) => {
-        if (item.type === 'disease') {
-            navigate('/disease-result', { state: item })
+    const [queries, setQueries] = useState([]);
+    const [diseaseItems, setDiseaseItems] = useState([]);
+    const [cropItems, setCropItems] = useState([]);
+
+
+    function handleDetails(item) {
+        if (item.type === "disease_detection") {
+            navigate(`/chat?session=${item.id}`);
         } else {
-            // TODO: navigate to advice detail page when implemented
-            console.log('View advice details for id:', item.id)
+            navigate(`/chat?session=${item.id}`);
         }
     }
+    const { userId } = useContext(UserContextData);
+    useEffect(() => {
+        async function fetch() {
+            try {
+                console.log(userId)
+                let response = await getHistory(userId);
+                console.log(response)
+                setCropItems([])
+                setDiseaseItems([])
+                response = response.map((item) => {
+                    const dateObj = new Date(item.created_at);
+                    const date = dateObj.toLocaleDateString('en-GB', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric'
+                    });
+                    const time = dateObj.toLocaleTimeString([], {
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+                    item = {
+                        ...item,
+                        crop: item.cropdata.crop,
+                        location: item.cropdata.location,
+                        query: item.cropdata.query,
+                        date,
+                        time,
+                    }
+
+                    if (item.type === "disease_detection") {
+                        setDiseaseItems((prev) => [...prev, item]);
+                    } else {
+                        setCropItems((prev) => [...prev, item]);
+                    }
+                    return item;
+                });
+
+                setQueries(response);
+
+            } catch (error) {
+                console.error('Error fetching history:', error)
+            }
+        }
+        fetch();
+    }, [userId]);
+
+    console.log("diseaseItems", diseaseItems)
+    console.log("cropItems", cropItems)
+
 
     return (
-        <div className="min-h-screen bg-linear-to-br from-slate-50 via-gray-50 to-zinc-100 font-sans">
-            <Navbar />
+        <div className="min-h-screen bg-slate-50/50 p-4 sm:p-8 font-sans antialiased text-slate-900">
+            <div className="max-w-4xl mx-auto">
 
-            {/* Hero */}
-            <div className="max-w-4xl mx-auto px-4 sm:px-6 pt-6 sm:pt-8 pb-4 sm:pb-5">
-                <div className="flex items-center justify-between gap-3">
-                    <div>
-                        <div className="flex items-center gap-3 mb-1">
-                            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-linear-to-br from-slate-500 to-gray-700 flex items-center justify-center text-lg sm:text-xl shadow-sm shrink-0">
-                                🕘
-                            </div>
-                            <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">Query History</h1>
+                {/* Compact Header */}
+                <header className="mb-8 flex items-center justify-between border-b border-slate-200 pb-4">
+                    <div className="flex items-center gap-4">
+                        <div className="w-1.5 h-8 bg-slate-900 rounded-full" />
+                        <h1 className="text-2xl font-black tracking-tighter uppercase">History</h1>
+                    </div>
+                    <div className="flex flex-col items-end">
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Queries</span>
+                        <span className="text-lg font-black leading-none">{queries.length}</span>
+                    </div>
+                </header>
+
+                <main className="space-y-8">
+                    {/* Disease Section */}
+                    <section>
+                        <SectionHeader label="Disease Detection" count={diseaseItems.length} colorClass="text-red-500" />
+                        <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+                            {diseaseItems.map((item) => (
+                                <HistoryRow key={item.id} item={item} handleDetails={handleDetails} />
+                            ))}
                         </div>
-                        <p className="text-gray-500 text-sm mt-1 ml-12 sm:ml-13">
-                            All your past disease predictions and crop advice queries
-                        </p>
-                    </div>
-                    <span className="shrink-0 text-xs font-semibold bg-gray-200 text-gray-600 px-3 py-1.5 rounded-full">
-                        {DUMMY_HISTORY.length} records
-                    </span>
-                </div>
-            </div>
+                    </section>
 
-            {/* History list */}
-            <div className="max-w-4xl mx-auto px-4 sm:px-6 pb-12 flex flex-col gap-3">
-                {DUMMY_HISTORY.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-20 gap-3 bg-white rounded-2xl shadow-sm">
-                        <span className="text-5xl">📭</span>
-                        <p className="text-gray-400 text-sm font-medium text-center px-4">
-                            No queries yet. Start by using Disease Prediction or Crop Advice.
-                        </p>
-                    </div>
-                ) : (
-                    DUMMY_HISTORY.map((item) => {
-                        const meta = TYPE_META[item.type]
-                        return (
-                            <div
-                                key={item.id}
-                                className={`bg-white rounded-2xl shadow-sm border-l-4 ${meta.borderCls} px-4 sm:px-5 py-4 flex gap-3 sm:gap-4 hover:shadow-md transition-shadow duration-200`}
-                            >
-                                {/* Icon */}
-                                <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl ${meta.iconBg} flex items-center justify-center text-lg sm:text-xl shrink-0 mt-0.5`}>
-                                    {meta.icon}
-                                </div>
+                    {/* Crop Advice Section */}
+                    <section>
+                        <SectionHeader label="Crop Advice/Problem" count={cropItems.length} colorClass="text-green-600" />
+                        <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+                            {cropItems.map((item) => (
+                                <HistoryRow key={item.id} item={item} handleDetails={handleDetails} />
+                            ))}
+                        </div>
+                    </section>
+                </main>
 
-                                {/* Content */}
-                                <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2 flex-wrap mb-1">
-                                        <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border ${meta.badgeCls}`}>
-                                            {meta.label}
-                                        </span>
-                                        <span className="text-sm font-bold text-gray-800">{item.crop}</span>
-                                        {item.location && (
-                                            <span className="text-[11px] text-gray-400 flex items-center gap-0.5">
-                                                📍 {item.location}
-                                            </span>
-                                        )}
-                                    </div>
 
-                                    <p className="text-xs text-gray-500 mb-2 truncate">
-                                        <span className="font-medium text-gray-600">Query: </span>{item.query}
-                                    </p>
-
-                                    <div className="bg-gray-50 rounded-lg px-3 py-2 text-xs text-gray-700 leading-relaxed">
-                                        <span className="font-semibold text-gray-500">Result: </span>{item.result}
-                                    </div>
-
-                                    {/* On mobile: date + button below content */}
-                                    <div className="flex items-center justify-between mt-3 sm:hidden">
-                                        <span className="text-[11px] text-gray-400">{formatDate(item.date)}</span>
-                                        <button
-                                            onClick={() => handleViewDetails(item)}
-                                            className={`flex items-center gap-1 text-[11px] font-semibold px-3 py-1.5 rounded-lg border cursor-pointer transition-all duration-150
-                                                ${item.type === 'disease'
-                                                    ? 'text-rose-600 border-rose-200 bg-rose-50 hover:bg-rose-100'
-                                                    : 'text-green-700 border-green-200 bg-green-50 hover:bg-green-100'
-                                                }`}
-                                        >
-                                            View Details <span className="text-[10px]">→</span>
-                                        </button>
-                                    </div>
-                                </div>
-
-                                {/* Date + Action — desktop only */}
-                                <div className="hidden sm:flex flex-col items-end justify-between shrink-0 gap-2 min-w-[110px]">
-                                    <span className="text-[11px] text-gray-400 whitespace-nowrap">
-                                        {formatDate(item.date)}
-                                    </span>
-                                    <button
-                                        onClick={() => handleViewDetails(item)}
-                                        className={`flex items-center gap-1 text-[11px] font-semibold px-3 py-1.5 rounded-lg border cursor-pointer transition-all duration-150
-                                            ${item.type === 'disease'
-                                                ? 'text-rose-600 border-rose-200 bg-rose-50 hover:bg-rose-100'
-                                                : 'text-green-700 border-green-200 bg-green-50 hover:bg-green-100'
-                                            }`}
-                                    >
-                                        View Details <span className="text-[10px]">→</span>
-                                    </button>
-                                </div>
-                            </div>
-                        )
-                    })
-                )}
             </div>
         </div>
-    )
+    );
 }

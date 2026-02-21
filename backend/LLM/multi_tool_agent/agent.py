@@ -9,8 +9,9 @@ from google.adk.tools import google_search
 from google.adk.tools.agent_tool import AgentTool
 from ..retrieval import retrieve_answer
 from google.adk.events import Event
-from models import ChatSession, Message, Reply
+from models import ChatSession, Message, MessageData, CropData
 from pydantic import BaseModel, Field
+import json
 
 
 load_dotenv()
@@ -85,6 +86,7 @@ crop_query_agent = Agent(
         7. You should respond in user language there are 2 languages the user can interact with english and telugu, you should respond accordingly
         8. If you dont have relavant information to answer user query then you can perform search using search_agent tool or if you still have no context of user query even after performing search then you can escalate the conversation to human agent by returing needs_escalate : True in the response.
         9. It is not quarantee that every query is related to disease, so you should not assume that every query is related to disease, it can be related to any aspect of crop like fertilizer, irrigation, harvesting etc. So you should consider all aspects of crop and not just disease.
+        10. You donot need to use all the tools provided to you, you can use only the tools that are necessary to answer the user query. Stop when you have enough information to answer the user query.
         """
     ),
     tools=[get_suggestion, AgentTool(agent=search_agent), retrieve_answer],
@@ -92,8 +94,9 @@ crop_query_agent = Agent(
 )
 
 
-async def query_agent(message, cropData, dbSession, userId = 1, sessionId=None, role="farmer"):
-    
+async def query_agent(cropData, dbSession, userId, sessionId=None, role="farmer"):
+    print(cropData.crop, cropData.location, cropData.query)
+    message = f"""crop: {cropData.crop}, location: {cropData.location}, query: {cropData.query}"""
     session_service = DatabaseSessionService(db_url=os.getenv("DATABASE_ASYNC_URL"))
 
     if not sessionId:
@@ -104,10 +107,11 @@ async def query_agent(message, cropData, dbSession, userId = 1, sessionId=None, 
         dbSession.refresh(new_session)
         sessionId = new_session.id
         session = await session_service.create_session(app_name=APP_NAME, user_id=str(userId), session_id=str(sessionId))
+        new_user_message = Message(session_id= sessionId, role=role, content = message)
+
     else:
         session = await session_service.get_session(app_name=APP_NAME, user_id=str(userId), session_id=str(sessionId))
-    print(session)
-    new_user_message = Message(session_id= sessionId, role=role, content = message)
+        new_user_message = Message(session_id= sessionId, role=role, content = cropData.query)
     dbSession.add(new_user_message)
     dbSession.commit()
     dbSession.refresh(new_user_message)
@@ -134,19 +138,21 @@ async def query_agent(message, cropData, dbSession, userId = 1, sessionId=None, 
                     final_answer = {"error": "Failed to parse agent response"}
             
     
+    
     if (final_answer.get("needs_escalation")):
-        escalation_result = escalate(session, sessionId)
-        new_agent_message = Message(session_id=sessionId, role="Agent", content=str(escalation_result))
+        escalation_result = escalate(dbSession, sessionId)
+        new_agent_message = Message(session_id=sessionId, role="Agent", content=json.dumps(escalation_result))
     else:
-        new_agent_message = Message(session_id=sessionId, role="Agent", content=str(final_answer))
-   
+        new_agent_message = Message(session_id=sessionId, role="Agent", content=json.dumps(final_answer))
+    final_answer["sessionId"] = str(sessionId)
+
     dbSession.add(new_agent_message)
     dbSession.commit()
     dbSession.refresh(new_agent_message)
     print(sessionId)
     return final_answer
     
-async def add_expert_reply(reply: Reply):
+async def add_expert_reply(reply: MessageData):
     try:
         session_service = DatabaseSessionService(db_url=os.getenv("DATABASE_ASYNC_URL"))
         session = await session_service.get_session(
