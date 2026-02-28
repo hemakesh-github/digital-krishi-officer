@@ -17,20 +17,6 @@ import json
 load_dotenv()
 APP_NAME = "crop_query_agent"
 
-# print(get_suggestion("rice"))
-# print(get_suggestion)
-
-# def get_suggestion(cropname, disease=None, district=None):
-#     """
-#     Args:
-#         cropname (str): name of crop
-#         disease(str): disease name(optional)
-#         district(str): name of district of farmer(optional)
-        
-#     """
-#     return   { "district":"Srikakulam","crop":"Rabi Rice","stage":"Vegetative","problem_disease":"Leaf folder","advice":"Spray Acephate @1.5 g/L or Chlorantraniliprole @0.3 ml/L"},
-
-
 
 def escalate(session, sessionId: str):
     """Escalates the conversation to a human agent when the model cannot answer.
@@ -66,36 +52,47 @@ crop_query_agent = Agent(
     name="crop_query_agent",
     model="gemini-2.5-flash",
     description=(
-        """Agent that helps farmers with their queries. 
-        You can access relavant information from the knowledge base using the retrieve_answer tool,
-        You can also get suggestions based on crop, disease and district using get_suggestion tool,
-        If you dont have relavant information to answer user query then you can perform search using search_agent tool or if you still have no context of user query even after performing search then you can escalate the conversation to human agent by returing escalate : True in the response.
-        You are multi lingual (telugu and english) agent.
-        The first thing you do is to check the get_suggestion tool to see if you can get relavant information based on crop, disease and district, then you check the retrieve_answer tool to see if you can get relavant information from the knowledge base based on user query, then you can perform search using search_agent tool to get more information about the query, you should use search agent tool wisely as it is costly and should be used only when necessary.
         """
+            You are an assistant for farmers to help then with crop related queries.
+            You are given crop details and also some context information retrieved from the knowledge base, 
+            you should use this information to answer the user query. 
+            You can also perform search using search agent tool when you dont have enough information 
+            to answer user query. You should try to answer user query with the information you have and only 
+            You should only answer if given context is sufficient to construct an answer, if the context is not sufficient to answer user query then
+            you just escalate the query"""
     ),
     instruction=(
         """
-        You are an assistant for farmers to help them with their crop-related queries. You have access to the following tools:
-        1. get_suggestion: This tool provides suggestions based on the crop name, disease (optional), and district (optional). It returns advice for the farmer based on the provided information.
-        2. retrieve_answer: This tool retrieves relevant answers from the knowledge base based on the query and an optional crop filter. It returns a list of relevant answers along with their relevance scores. You use this to get more context, if the context retrieved is relavant answer based on the context.
-        3. search_agent: This tool allows you to perform a Google search to find relevant information for the farmer's query. You can use this tool when you need more information to answer the query or when the provided information is insufficient or to get disease from symptoms or gain knowledge about the crop, Search Agent is also a last resort before escalation.
-        4. Every new information you get with tools should be considered only when it is relavant to the original user query.
-        5. You final answer should be shorter, should contain about solution to the problem rather than elaborate explanation of the problem. keep problem explanation short
-        6. The most important thing is avoid false information as this is critical for the application and stakeholders.
-        7. You should respond in user language there are 2 languages the user can interact with english and telugu, you should respond accordingly
-        8. If you dont have relavant information to answer user query then you can perform search using search_agent tool or if you still have no context of user query even after performing search then you can escalate the conversation to human agent by returing needs_escalate : True in the response.
-        9. It is not quarantee that every query is related to disease, so you should not assume that every query is related to disease, it can be related to any aspect of crop like fertilizer, irrigation, harvesting etc. So you should consider all aspects of crop and not just disease.
-        10. You donot need to use all the tools provided to you, you can use only the tools that are necessary to answer the user query. Stop when you have enough information to answer the user query.
+        You are an assistant for farmers to help them with their crop-related queries:
+        - You will be provided with crop details and context information retrieved from the knowledge base.
+        - Use the provided information to answer user queries.
+        - If the provided context is insufficient to answer a user query, escalate the query to a human agent.
         """
     ),
-    tools=[get_suggestion, AgentTool(agent=search_agent), retrieve_answer],
     output_schema=AdvisoryResponse,
 )
 
 
 async def query_agent(cropData, dbSession, userId, sessionId=None, role="farmer"):
     print(cropData.crop, cropData.location, cropData.query)
+
+    def _build_query(cropData, retrieved_data=None, suggestions=None):
+        query_parts = []
+        if cropData.crop:
+            query_parts.append(f"Crop: {cropData.crop}")
+        if cropData.location:
+            query_parts.append(f"Location: {cropData.location}")
+        if cropData.query:
+            query_parts.append(f"Query: {cropData.query}")
+        if retrieved_data:
+            query_parts.append(f"This is retrieved Data if the data is in the context use it else discard this information: {retrieved_data}")
+        if suggestions:
+            query_parts.append(f"This is suggestions based on crop, disease and district if the suggestions are in the context use it else discard this information: {suggestions}")
+        return " | ".join(query_parts)
+
+
+    retrieved_data = retrieve_answer(cropData.query)
+
     message = f"""crop: {cropData.crop}, location: {cropData.location}, query: {cropData.query}"""
     session_service = DatabaseSessionService(db_url=os.getenv("DATABASE_ASYNC_URL"))
 
@@ -117,8 +114,10 @@ async def query_agent(cropData, dbSession, userId, sessionId=None, role="farmer"
     dbSession.refresh(new_user_message)
 
     runner = Runner(agent=crop_query_agent, app_name=APP_NAME, session_service=session_service)
+    
+    query = _build_query(cropData, retrieved_data=retrieved_data, suggestions=get_suggestion(dbSession, cropData.crop, cropData.location, cropData.query))
 
-    content = types.Content(role='user', parts=[types.Part(text=message)])
+    content = types.Content(role='user', parts=[types.Part(text=query)])
     events = runner.run_async(user_id=str(userId), session_id=str(sessionId), new_message=content)
     final_answer=""
     async for event in events:
