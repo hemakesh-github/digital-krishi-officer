@@ -2,6 +2,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import UserContext from './context/UserContext'
+import './i18n'
 
 import './index.css'
 import './App.css'
@@ -15,6 +16,5 @@ createRoot(document.getElementById('root')).render(
             </StrictMode>
         </UserContext>
     </BrowserRouter>
-
 )
 
