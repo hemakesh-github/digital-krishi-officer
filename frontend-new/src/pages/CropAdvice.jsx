@@ -1,6 +1,9 @@
+import { useTranslation } from 'react-i18next'
 import CropAdviceCard from '../components/CropAdviceCard'
 
 export default function CropAdvice() {
+    const { t } = useTranslation()
+
     return (
         <div className="animate-fade-in p-6 lg:p-8 flex flex-col items-center">
             <div className="mb-6 text-center">
@@ -12,11 +15,11 @@ export default function CropAdvice() {
                         </svg>
                     </div>
                     <h1 className="text-2xl lg:text-3xl font-extrabold tracking-tight text-foreground">
-                        Crop Advice
+                        {t('dashboard.advice.title')}
                     </h1>
                 </div>
                 <p className="text-sm text-muted-fg">
-                    Describe your crop issue and get expert AI-powered advice tailored to your location
+                    {t('dashboard.advice.pageSubtitle', 'Describe your crop issue and get expert AI-powered advice tailored to your location')}
                 </p>
             </div>
             <div className="w-full max-w-xl">

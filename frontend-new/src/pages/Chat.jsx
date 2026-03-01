@@ -1,45 +1,44 @@
 import { useState, useRef, useEffect, useContext } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { getMessages, addMessage, cropAdviceContinue } from '../api_services/api_services'
+import { getMessages, cropAdviceContinue, sendExpertReply } from '../api_services/api_services'
+import { transcribe } from '../api_services/transcription'
 import { UserContextData } from '../context/UserContext'
+import { useTranslation } from 'react-i18next'
 
-// TODO: Replace with real API calls
-// async function sendChatMessage({ message, cropName, diseaseName }) { ... }
-// async function sendToExpert({ message, cropName }) { ... }
 
 function renderMessage(text) {
-    
-   console.log(text)   
-   if (typeof text === 'string') {
-    return <p>{text}</p>
-   }
-   return (
-  <div >
-    <div>
-      {Object.entries(text).map(([key, value]) => (
-        ["query","disease_identified","recommended_action", ].includes(key) ? (
-            <>
-          <div
-            key={key + "-label"}
-            className="font-semibold text-gray-500 uppercase w-100% text-left"
-          >
-            {key.replaceAll("_", " ")}:
-          </div>
 
-          <div
-            key={key + "-value"}
-            className={`col-span-2 text-gray-800 text-left pl-2`}
-          >
-            {typeof value === "boolean"
-              ? value ? "Yes" : "No"
-              : String(value)}
-          </div>
-        </>
-        ): key == "msg" ? <span className='col-span-2 text-gray-800'>{value}</span> : null
-      ))}
-    </div>
-  </div>
-)
+    console.log(text)
+    if (typeof text === 'string') {
+        return <p>{text}</p>
+    }
+    return (
+        <div >
+            <div>
+                {Object.entries(text).map(([key, value]) => (
+                    ["query", "disease_identified", "recommended_action",].includes(key) ? (
+                        <>
+                            <div
+                                key={key + "-label"}
+                                className="font-semibold text-gray-500 uppercase w-100% text-left"
+                            >
+                                {key.replaceAll("_", " ")}:
+                            </div>
+
+                            <div
+                                key={key + "-value"}
+                                className={`col-span-2 text-gray-800 text-left pl-2`}
+                            >
+                                {typeof value === "boolean"
+                                    ? value ? "Yes" : "No"
+                                    : String(value)}
+                            </div>
+                        </>
+                    ) : key == "msg" ? <span className='col-span-2 text-gray-800'>{value}</span> : null
+                ))}
+            </div>
+        </div>
+    )
 }
 
 
@@ -82,18 +81,29 @@ function TypingIndicator({ role = 'ai' }) {
     )
 }
 
-function ChatBubble({ msg, onFeedback }) {
-    const isUser = msg.role === 'farmer'
+function ChatBubble({ msg, myRole, t }) {
+    // isMine = this message was sent by the currently logged-in user
+    const isMine = msg.role === myRole
     const isExpert = msg.role === 'expert'
-    const s = isUser ? null : SENDER[msg.role] || SENDER.ai
+    const s = isMine ? null : SENDER[msg.role] || SENDER.ai
+
+    // Right-side bubble colours
+    const myBubbleBg = myRole === 'expert'
+        ? 'bg-linear-to-br from-teal-500 to-cyan-600 text-white rounded-br-none'
+        : 'bg-linear-to-br from-green-500 to-emerald-600 text-white rounded-br-none'
+
+    // Right-side avatar colours
+    const myAvatarBg = myRole === 'expert'
+        ? 'bg-linear-to-br from-teal-500 to-cyan-600'
+        : 'bg-linear-to-br from-green-500 to-emerald-600'
 
     return (
-        <div className={`flex items-end gap-2 sm:gap-3 px-3 sm:px-6 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
+        <div className={`flex items-end gap-2 sm:gap-3 px-3 sm:px-6 ${isMine ? 'flex-row-reverse' : 'flex-row'}`}>
 
             {/* Avatar */}
-            {isUser ? (
-                <div className="w-9 h-9 rounded-full bg-linear-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-base shrink-0 shadow-sm">
-                    👤
+            {isMine ? (
+                <div className={`w-9 h-9 rounded-full ${myAvatarBg} flex items-center justify-center text-base shrink-0 shadow-sm`}>
+                    {myRole === 'expert' ? '👨‍🌾' : '👤'}
                 </div>
             ) : (
                 <div className="flex flex-col items-center gap-1 shrink-0">
@@ -107,76 +117,42 @@ function ChatBubble({ msg, onFeedback }) {
             )}
 
             {/* Bubble column */}
-            <div className={`flex flex-col gap-1 max-w-[88%] sm:max-w-[78%] ${isUser ? 'items-end' : 'items-start'}`}>
+            <div className={`flex flex-col gap-1 max-w-[88%] sm:max-w-[78%] ${isMine ? 'items-end' : 'items-start'}`}>
 
-                {/* Sender name row (non-user only) */}
-                {!isUser && (
+                {/* Sender label — only for messages not sent by me */}
+                {!isMine && (
                     <div className="flex items-center gap-2 px-1 mb-0.5">
                         <span className="text-xs font-bold text-gray-700">{s.label}</span>
                         {isExpert ? (
                             <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${s.badgeBg} flex items-center gap-1`}>
-                                🏅 Expert
+                                🏅 {t('chat.expert')}
+                            </span>
+                        ) : msg.role === 'farmer' ? (
+                            <span className="text-[10px] font-medium px-2 py-0.5 rounded-full border bg-blue-50 text-blue-700 border-blue-200">
+                                🧑‍🌾 {t('chat.farmer')}
                             </span>
                         ) : (
                             <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full border ${s.badgeBg}`}>
-                                🤖 AI Agent
+                                🤖 {t('chat.ai')}
                             </span>
                         )}
                     </div>
                 )}
 
                 {/* Bubble */}
-                <div className={`px-5 py-3.5 rounded-2xl shadow-sm
-                    ${isUser
-                        ? 'bg-linear-to-br from-green-500 to-emerald-600 text-white rounded-br-none'
-                        : s.bubbleBg
+                <div className={`px-5 py-3.5 rounded-2xl shadow-sm ${isMine ? myBubbleBg : s.bubbleBg
                     }`}>
-                    {isUser
-                        ? <p className="text-sm leading-relaxed whitespace-pre-wrap">
-                            {msg.content}
-                            {/* {typeof msg.content === 'string' ? JSON.parse(msg.content).query : msg.content.query} */}
-                        </p>
+                    {isMine
+                        ? <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.content}</p>
                         : <div className="flex flex-col gap-0.5">{renderMessage(msg.content)}</div>
                     }
                 </div>
 
-                {/* Footer: timestamp + feedback */}
-                <div className={`flex items-center gap-2 px-1 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
+                {/* Footer: timestamp */}
+                <div className={`flex items-center gap-2 px-1 ${isMine ? 'flex-row-reverse' : 'flex-row'}`}>
                     <span className="text-[10px] text-gray-400">
                         {msg.created_at ? new Date(msg.created_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true }) : "now"}
                     </span>
-
-                    {/* Fulfilled / Not Fulfilled — only on AI or Expert messages */}
-                    {!isUser && (
-                        <div className="flex items-center gap-1">
-                            {msg.feedback === 'fulfilled' ? (
-                                <span className="text-[11px] text-green-600 font-semibold flex items-center gap-0.5">
-                                    ✅ Helpful
-                                </span>
-                            ) : msg.feedback === 'not_fulfilled' ? (
-                                <span className="text-[11px] text-red-500 font-semibold flex items-center gap-0.5">
-                                    ❌ Not helpful
-                                </span>
-                            ) : (
-                                <>
-                                    <button
-                                        onClick={() => onFeedback(msg.id, 'fulfilled')}
-                                        title="This was helpful"
-                                        className="flex items-center gap-1 text-[11px] text-gray-400 hover:text-green-600 hover:bg-green-50 px-2 py-0.5 rounded-full border border-transparent hover:border-green-200 transition-all cursor-pointer bg-transparent"
-                                    >
-                                        👍 Fulfilled
-                                    </button>
-                                    <button
-                                        onClick={() => onFeedback(msg.id, 'not_fulfilled')}
-                                        title="This didn't help"
-                                        className="flex items-center gap-1 text-[11px] text-gray-400 hover:text-red-500 hover:bg-red-50 px-2 py-0.5 rounded-full border border-transparent hover:border-red-200 transition-all cursor-pointer bg-transparent"
-                                    >
-                                        👎 Not Fulfilled
-                                    </button>
-                                </>
-                            )}
-                        </div>
-                    )}
                 </div>
             </div>
         </div>
@@ -186,21 +162,34 @@ function ChatBubble({ msg, onFeedback }) {
 export default function Chat() {
     const navigate = useNavigate()
     const { search } = useLocation()
+    const { t } = useTranslation()
     const params = new URLSearchParams(search)
-    const sessionId = params.get("session")
+    const sessionId = params.get("session") || params.get("sessionId")
+
     const [cropName, setCropName] = useState("")
     const [messages, setMessages] = useState([])
+    const [input, setInput] = useState('')
+    const [isTyping, setIsTyping] = useState(false)
+    const [isRecording, setIsRecording] = useState(false)
+    const [isTranscribing, setIsTranscribing] = useState(false)
+    const [interimText, setInterimText] = useState('')
+
     const userData = useContext(UserContextData)
 
-    
+    const bottomRef = useRef(null)
+    const inputRef = useRef(null)
+    const mediaRecorderRef = useRef(null)
+    const audioChunksRef = useRef([])
 
-    let response;
     useEffect(() => {
         async function fetchMessages() {
             try {
-                response = await getMessages(sessionId)
-                setCropName(response[0].content.crop_name)
-                setMessages(response)
+                if (!sessionId) return
+                const response = await getMessages(sessionId)
+                const first = response?.[0]
+                const firstContent = first?.content
+                setCropName(firstContent?.crop_name || firstContent?.crop || "")
+                setMessages(Array.isArray(response) ? response : [])
 
             }
             catch (err) {
@@ -208,21 +197,8 @@ export default function Chat() {
             }
         }
         fetchMessages();
-        
-    }, [search])
 
-
-    
-
-    console.log(messages)
-    const [input, setInput] = useState('')
-    const [isTyping, setIsTyping] = useState(false)
-    const [isRecording, setIsRecording] = useState(false)
-    const [interimText, setInterimText] = useState('')
-
-    const bottomRef = useRef(null)
-    const inputRef = useRef(null)
-    const recognitionRef = useRef(null)
+    }, [search, sessionId]) // Added sessionId to dependency array
 
     useEffect(() => {
         bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -232,66 +208,101 @@ export default function Chat() {
 
     const sendMessage = async (text) => {
         const trimmed = text.trim()
+        if (!trimmed) return
 
         try {
-            setIsTyping(true)
+            if (!sessionId) return
             setInput('')
-            setMessages(prev => [...prev, { role: "farmer", content: trimmed, feedback: null }])
-            const reply = await cropAdviceContinue(sessionId, trimmed)
-            response = await getMessages(sessionId)
-            setCropName(response[0].content.crop_name)
-            setMessages(response)
+            setInterimText('') // Clear interim text after sending
+
+            // Expert flow: reply to farmer, show full previous chat
+            if (userData?.type === 'expert') {
+                setIsTyping(true)
+                await sendExpertReply(sessionId, trimmed)
+                const response = await getMessages(sessionId)
+                const first = response?.[0]
+                const firstContent = first?.content
+                setCropName(firstContent?.crop_name || firstContent?.crop || "")
+                setMessages(Array.isArray(response) ? response : [])
+                setIsTyping(false)
+                return
+            }
+
+            // Farmer flow: continue AI crop advice chat
+            setIsTyping(true)
+            setMessages(prev => [...prev, { id: Date.now(), role: "farmer", content: trimmed, created_at: new Date().toISOString() }])
+            await cropAdviceContinue(sessionId, trimmed)
+            const response = await getMessages(sessionId)
+            const first = response?.[0]
+            const firstContent = first?.content
+            setCropName(firstContent?.crop_name || firstContent?.crop || "")
+            setMessages(Array.isArray(response) ? response : [])
             setIsTyping(false)
         } catch (err) {
             console.log(err)
-        }   
-        
+            setIsTyping(false)
+        }
     }
 
-    const handleFeedback = (msgId, value) => {
-        setMessages(prev => prev.map(m => m.id === msgId ? { ...m, feedback: value } : m))
-        // TODO: POST feedback to API: api.post('/feedback', { msgId, value })
-    }
+
 
     const handleKeyDown = (e) => {
-        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(input) }
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault()
+            sendMessage(input)
+        }
     }
 
-    const toggleRecording = () => {
-        const SR = window.SpeechRecognition || window.webkitSpeechRecognition
-        if (!SR) { alert('Speech recognition is not supported. Please use Chrome.'); return }
-
+    const toggleRecording = async () => {
         if (isRecording) {
-            recognitionRef.current?.stop()
+            // Stop recording
+            mediaRecorderRef.current?.stop()
             setIsRecording(false)
             setInterimText('')
-            return
-        }
+        } else {
+            // Start recording
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+                const mediaRecorder = new MediaRecorder(stream)
+                mediaRecorderRef.current = mediaRecorder
+                audioChunksRef.current = []
 
-        const rec = new SR()
-        rec.lang = 'en-IN'
-        rec.interimResults = true
-        rec.continuous = true
-        rec.onresult = (e) => {
-            let final = '', interim = ''
-            for (const r of e.results) {
-                if (r.isFinal) final += r[0].transcript
-                else interim += r[0].transcript
+                mediaRecorder.ondataavailable = (event) => {
+                    audioChunksRef.current.push(event.data)
+                }
+
+                mediaRecorder.onstop = async () => {
+                    stream.getTracks().forEach(t => t.stop())
+                    const mimeType = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/ogg'
+                    const ext = mimeType.includes('webm') ? 'webm' : 'ogg'
+                    const blob = new Blob(audioChunksRef.current, { type: mimeType })
+                    const formData = new FormData()
+                    formData.append('audio_file', blob, `recording.${ext}`)
+                    setIsTranscribing(true)
+                    try {
+                        const result = await transcribe(formData)
+                        const text = result?.transcript ?? ''
+                        if (text) setInput(prev => prev ? `${prev} ${text}` : text)
+                    } catch (error) {
+                        console.error('Error transcribing audio:', error)
+                        alert(t('chat.transcriptionFailed'))
+                    } finally {
+                        setIsTranscribing(false)
+                    }
+                }
+
+                mediaRecorder.start()
+                setIsRecording(true)
+                // Optional: Implement real-time transcription for interimText if supported by API
+            } catch (error) {
+                console.error('Error accessing microphone:', error)
+                alert(t('chat.micAccessDenied'))
             }
-            if (final) setInput(prev => (prev + ' ' + final).trim())
-            setInterimText(interim)
         }
-        rec.onend = () => { setIsRecording(false); setInterimText('') }
-        rec.onerror = () => { setIsRecording(false); setInterimText('') }
-        recognitionRef.current = rec
-        rec.start()
-        setIsRecording(true)
     }
 
-
     return (
-        <div className="h-screen flex flex-col bg-gray-50 font-sans overflow-hidden">
-
+        <div className="flex-1 w-full flex flex-col">
             {/* ── Sub-header ── */}
             <div className="bg-white border-b border-gray-100 px-3 sm:px-6 py-2 sm:py-2.5 flex items-center justify-between shrink-0 shadow-sm gap-2">
                 <div className="flex items-center gap-2 sm:gap-3 min-w-0">
@@ -299,11 +310,11 @@ export default function Chat() {
                         onClick={() => navigate(-1)}
                         className="text-gray-400 hover:text-gray-700 text-sm font-medium cursor-pointer border-none bg-transparent flex items-center gap-1 transition shrink-0"
                     >
-                        ← Back
+                        ← {t('chat.back')}
                     </button>
                     <div className="w-px h-5 bg-gray-200 shrink-0" />
 
-                  
+
 
                     {/* Context pills — hidden on xs */}
                     {cropName && (
@@ -312,70 +323,64 @@ export default function Chat() {
                         </div>
                     )}
                 </div>
-
             </div>
 
-           
+
 
             {/* ── Messages ── */}
             <div className="flex-1 overflow-y-auto py-4 sm:py-6 flex flex-col gap-4 sm:gap-5">
                 {messages.map(msg => (
-                    <ChatBubble key={msg.id} msg={msg} onFeedback={handleFeedback} />
+                    <ChatBubble key={msg.id} msg={msg} myRole={userData?.type === 'expert' ? 'expert' : 'farmer'} t={t} />
                 ))}
                 {isTyping && <TypingIndicator />}
                 <div ref={bottomRef} />
             </div>
 
             {/* ── Input bar ── */}
-            <div className={`bg-white border-t px-3 sm:px-6 py-2.5 sm:py-3 shrink-0 shadow-[0_-2px_12px_rgba(0,0,0,0.04)] transition-colors duration-300
-                ${isRecording ? 'border-red-200 bg-red-50/40' : 'border-gray-100'}`}>
+            <div className={`bg-white border-t border-gray-100 px-3 sm:px-5 py-3 shrink-0 shadow-[0_-2px_12px_rgba(0,0,0,0.04)]
+                ${isRecording ? 'border-red-200 bg-red-50/30' : ''}`}>
 
-                {/* Recording banner */}
-                {isRecording && (
-                    <div className="mb-3 flex items-center justify-between bg-red-500 text-white rounded-xl px-4 py-2.5">
-                        <div className="flex items-center gap-3">
-                            <div className="flex items-center gap-[3px] h-6">
-                                {[...Array(7)].map((_, i) => (
-                                    <div key={i} className="wave-bar w-1 bg-white/80 rounded-full" />
-                                ))}
-                            </div>
-                            <div>
-                                <div className="text-xs font-bold tracking-wide">Recording…</div>
-                                {interimText
-                                    ? <div className="text-[11px] text-red-100 mt-0.5 max-w-xs truncate italic">"{interimText}"</div>
-                                    : <div className="text-[11px] text-red-200 mt-0.5">Speak now in English or Hindi</div>
-                                }
-                            </div>
+                {/* Recording / Transcribing status */}
+                {(isRecording || isTranscribing) && (
+                    <div className="mb-3 flex items-center justify-between rounded-xl px-4 py-2.5 text-xs font-medium
+                        ${isRecording ? 'bg-red-50 text-red-700 border border-red-100' : 'bg-green-50 text-green-700 border border-green-100'}">
+                        <div className="flex items-center gap-2">
+                            {isRecording ? (
+                                <>
+                                    <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                                    <span>{t('chat.recording')}...</span>
+                                </>
+                            ) : (
+                                <>
+                                    <svg className="animate-spin w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                                    </svg>
+                                    <span>Transcribing...</span>
+                                </>
+                            )}
                         </div>
-                        <button onClick={toggleRecording} className="text-xs font-bold bg-white/20 hover:bg-white/30 px-3 py-1 rounded-lg cursor-pointer border-none text-white transition">
-                            ✕ Stop
+                        <button onClick={toggleRecording} className="hover:bg-red-100 px-2 py-1 rounded-lg transition cursor-pointer border-none text-red-600">
+                            ✕ {t('chat.stop')}
                         </button>
                     </div>
                 )}
 
-                <div className="flex items-end gap-2">
-                    {/* Mic with pulse rings */}
-                    <div className="relative shrink-0 flex items-center justify-center">
-                        {isRecording && (
-                            <>
-                                <span className="mic-ring   absolute w-10 h-10 rounded-full bg-red-400 opacity-60" />
-                                <span className="mic-ring-2 absolute w-10 h-10 rounded-full bg-red-400 opacity-40" />
-                            </>
-                        )}
-                        <button
-                            onClick={toggleRecording}
-                            title={isRecording ? 'Stop recording' : 'Voice input'}
-                            className={`relative z-10 w-10 h-10 rounded-xl flex items-center justify-center text-base border-none cursor-pointer transition-all duration-200
-                                ${isRecording
-                                    ? 'bg-red-500 text-white shadow-lg shadow-red-300 scale-110'
-                                    : 'bg-gray-100 text-gray-500 hover:bg-gray-200 hover:scale-105'
-                                }`}
-                        >
-                            🎙️
-                        </button>
-                    </div>
+                <div className="flex items-end gap-2 sm:gap-3">
+                    {/* Mic button */}
+                    <button
+                        onClick={toggleRecording}
+                        title={isRecording ? t('chat.stopRecording') : t('chat.voiceInput')}
+                        className={`shrink-0 w-10 h-10 rounded-xl flex items-center justify-center text-base border-none cursor-pointer transition-all duration-200
+                            ${isRecording
+                                ? 'bg-red-500 text-white shadow-lg shadow-red-300'
+                                : 'bg-gray-100 text-gray-500 hover:bg-gray-200 hover:scale-105'
+                            }`}
+                    >
+                        🎙️
+                    </button>
 
-                    {/* Textarea */}
+                    {/* Text input */}
                     <textarea
                         ref={inputRef}
                         value={input}
@@ -383,28 +388,31 @@ export default function Chat() {
                         onKeyDown={handleKeyDown}
                         placeholder={
                             isRecording
-                                ? 'Listening… your speech will appear here'
-                                    : 'Type your farming question… (Enter to send · Shift+Enter for new line)'
+                                ? t('chat.listening')
+                                : (userData?.type === 'expert'
+                                    ? t('chat.expertReplyPlaceholder')
+                                    : t('chat.farmerQuestionPlaceholder')
+                                )
                         }
                         rows={1}
                         className={`flex-1 border rounded-xl px-4 py-2.5 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:border-transparent transition-all resize-none leading-relaxed
                             ${isRecording
                                 ? 'border-red-300 bg-white focus:ring-red-300'
-                                    : 'border-gray-200 bg-gray-50 focus:ring-green-300'
+                                : 'border-gray-200 bg-gray-50 focus:ring-green-300'
                             }`}
-                        style={{ maxHeight: '120px', overflowY: 'auto' }}
+                        style={{ maxHeight: '120px' }}
                         onInput={e => {
                             e.target.style.height = 'auto'
-                            e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px'
+                            e.target.style.height = Math.min(e.scrollHeight, 120) + 'px'
                         }}
                     />
 
-                    {/* Send */}
+                    {/* Send button */}
                     <button
                         onClick={() => sendMessage(input)}
-                        disabled={!input.trim() || isTyping}
-                        className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg shrink-0 border-none transition-all duration-150
-                            ${input.trim() && !isTyping
+                        disabled={!input.trim() || isTyping || isTranscribing}
+                        className={`shrink-0 w-10 h-10 rounded-xl flex items-center justify-center text-lg border-none transition-all duration-150
+                            ${input.trim() && !isTyping && !isTranscribing
                                 ? 'bg-green-600 hover:bg-green-700 text-white cursor-pointer active:scale-95 shadow-sm shadow-green-200'
                                 : 'bg-gray-100 text-gray-300 cursor-not-allowed'
                             }`}
