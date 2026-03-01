@@ -1,50 +1,69 @@
 import { useState, useRef } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import LocationSelector from './LocationSelector'
 import { cropAdvice } from '../api_services/api_services'
+import { transcribe } from '../api_services/transcription'
 
 export default function CropAdviceCard() {
+    const { t } = useTranslation()
     const { state: navState } = useLocation()
     const navigate = useNavigate()
 
-    const [crop, setCrop] = useState(navState?.crop || '')
-    const [locState, setLocState] = useState('')
+    const [locState, setLocState] = useState('Andhra Pradesh')
     const [district, setDistrict] = useState('')
     const [city, setCity] = useState('')
     const [query, setQuery] = useState('')
     const [loading, setLoading] = useState(false)
     const [listening, setListening] = useState(false)
+    const [transcribing, setTranscribing] = useState(false)
 
-    const recognitionRef = useRef(null)
-    const canSubmit = crop.trim() && locState && district && city && query.trim()
+    const mediaRecorderRef = useRef(null)
+    const audioChunksRef = useRef([])
+    const canSubmit = locState && district && city && query.trim()
 
-    /* ── Web Speech API mic ── */
-    const toggleMic = () => {
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
-        if (!SpeechRecognition) { alert('Speech recognition not supported in this browser.'); return }
-
+    /* ── Sarvam mic: record → upload → transcribe ── */
+    const toggleMic = async () => {
         if (listening) {
-            recognitionRef.current?.stop()
+            // Stop recording — this triggers ondataavailable + onstop
+            mediaRecorderRef.current?.stop()
             setListening(false)
             return
         }
 
-        const rec = new SpeechRecognition()
-        rec.lang = 'en-IN'
-        rec.interimResults = false
-        rec.maxAlternatives = 1
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+            const mimeType = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/ogg'
+            const recorder = new MediaRecorder(stream, { mimeType })
+            audioChunksRef.current = []
 
-        rec.onresult = (e) => {
-            const transcript = e.results[0][0].transcript
-            setQuery(q => q ? `${q} ${transcript}` : transcript)
-            setListening(false)
+            recorder.ondataavailable = (e) => {
+                if (e.data.size > 0) audioChunksRef.current.push(e.data)
+            }
+
+            recorder.onstop = async () => {
+                stream.getTracks().forEach(t => t.stop())
+                const blob = new Blob(audioChunksRef.current, { type: mimeType })
+                const ext = mimeType.includes('webm') ? 'webm' : 'ogg'
+                const formData = new FormData()
+                formData.append('audio_file', blob, `recording.${ext}`)
+
+                setTranscribing(true)
+                try {
+                    const result = await transcribe(formData)
+                    const text = result?.transcript ?? ""
+                    if (text) setQuery(q => q ? `${q} ${text}` : text)
+                } finally {
+                    setTranscribing(false)
+                }
+            }
+
+            mediaRecorderRef.current = recorder
+            recorder.start()
+            setListening(true)
+        } catch {
+            alert('Microphone access denied or not available.')
         }
-        rec.onerror = () => setListening(false)
-        rec.onend = () => setListening(false)
-
-        recognitionRef.current = rec
-        rec.start()
-        setListening(true)
     }
 
     const handleSubmit = async () => {
@@ -52,18 +71,17 @@ export default function CropAdviceCard() {
         setLoading(true)
 
         const locationStr = `${city}, ${district}, ${locState}`
-        const userMessage = `Crop: ${crop}\nLocation: ${locationStr}\nQuery: ${query}`
 
         // Call API
-        const response = await cropAdvice(crop, locationStr, query)
+        const response = await cropAdvice(locationStr, query)
         setLoading(false)
 
-        if (response ) {
+        if (response) {
             let aiText = response
             // If the backend returns a structured object, format it as markdown
             if (typeof aiText === 'object') {
                 const { crop_name, disease_identified, recommended_action, needs_escalation } = aiText
-                aiText = `Here is the analysis based on your inputs:\n\n> **Identified Issue:** ${disease_identified || 'Unknown'}\n> **Crop:** ${crop_name || crop}\n\n**Recommendation:**\n${recommended_action}`
+                aiText = `Here is the analysis based on your inputs:\n\n> **Identified Issue:** ${disease_identified || 'Unknown'}\n> **Crop:** ${crop_name}\n\n**Recommendation:**\n${recommended_action}`
 
                 if (needs_escalation) {
                     aiText += `\n\n> ⚠️ **Note:** This issue appears complex and may require expert validation.`
@@ -93,28 +111,30 @@ export default function CropAdviceCard() {
                     </svg>
                 </div>
                 <div>
-                    <div className="font-semibold text-foreground text-sm">Crop Problem / Advice</div>
-                    <div className="text-muted-fg text-xs mt-0.5">Expert guidance for your crop issues</div>
+                    <div className="font-semibold text-foreground text-sm">{t('dashboard.advice.title')}</div>
+                    <div className="text-muted-fg text-xs mt-0.5">{t('dashboard.advice.subtitle')}</div>
                 </div>
             </div>
 
             <div className="p-4 flex flex-col gap-3">
 
-                {/* Crop name */}
+                {/* Crop name (hidden/removed, AI will deduce) */}
+                {/* 
                 <div className="flex flex-col gap-1">
-                    <label className="text-[11px] font-semibold text-muted-fg uppercase tracking-wider">Crop Name</label>
+                    <label className="text-[11px] font-semibold text-muted-fg uppercase tracking-wider">{t('dashboard.advice.cropNameTitle')}</label>
                     <input
                         type="text"
-                        placeholder="e.g. Paddy, Cotton, Maize..."
+                        placeholder={t('dashboard.advice.cropNamePlaceholder')}
                         value={crop}
                         onChange={e => setCrop(e.target.value)}
                         className={inputCls}
                     />
                 </div>
+                */}
 
                 {/* Location */}
                 <div className="flex flex-col gap-1">
-                    <label className="text-[11px] font-semibold text-muted-fg uppercase tracking-wider">Location</label>
+                    <label className="text-[11px] font-semibold text-muted-fg uppercase tracking-wider">{t('dashboard.advice.locationTitle')}</label>
                     <LocationSelector
                         state={locState} setState={setLocState}
                         district={district} setDistrict={setDistrict}
@@ -124,9 +144,9 @@ export default function CropAdviceCard() {
 
                 {/* Query + mic */}
                 <div className="flex flex-col gap-2">
-                    <label className="text-[11px] font-semibold text-muted-fg uppercase tracking-wider">Your Query</label>
+                    <label className="text-[11px] font-semibold text-muted-fg uppercase tracking-wider">{t('dashboard.advice.queryTitle')}</label>
                     <textarea
-                        placeholder="Describe the problem — leaves turning yellow, stunted growth, pest attack..."
+                        placeholder={t('dashboard.advice.queryPlaceholder')}
                         value={query}
                         onChange={e => setQuery(e.target.value)}
                         rows={4}
@@ -136,22 +156,33 @@ export default function CropAdviceCard() {
                     <button
                         type="button"
                         onClick={toggleMic}
+                        disabled={transcribing}
                         className={`w-full flex items-center justify-center gap-2.5 py-2.5 rounded-xl border text-sm font-semibold transition-all duration-200 cursor-pointer
-                            ${listening
-                                ? 'bg-foreground text-card border-foreground'
-                                : 'bg-muted text-foreground border-border hover:border-foreground/40'}`}
+                            ${transcribing
+                                ? 'bg-muted text-muted-fg border-border cursor-not-allowed'
+                                : listening
+                                    ? 'bg-foreground text-card border-foreground'
+                                    : 'bg-muted text-foreground border-border hover:border-foreground/40'}`}
                     >
-                        {listening ? (
+                        {transcribing ? (
+                            <>
+                                <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                                </svg>
+                                {t('dashboard.advice.transcribing')}
+                            </>
+                        ) : listening ? (
                             <>
                                 <span className="relative flex h-3 w-3 shrink-0">
                                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
                                     <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500" />
                                 </span>
-                                Recording... Tap to stop
+                                {t('dashboard.advice.recordingTap')}
                             </>
                         ) : (
                             <>
-                                🎙️ Tap to speak your query
+                                {t('dashboard.advice.tapSpeak')}
                             </>
                         )}
                     </button>
@@ -172,9 +203,9 @@ export default function CropAdviceCard() {
                                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
                             </svg>
-                            Getting advice...
+                            {t('dashboard.advice.gettingAdvice')}
                         </>
-                    ) : 'Get Advice'}
+                    ) : t('dashboard.advice.getAdvice')}
                 </button>
             </div>
         </div>
