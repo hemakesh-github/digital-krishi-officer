@@ -1,5 +1,6 @@
 import { useState, useEffect, useContext } from "react";
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { getHistory } from "../api_services/api_services";
 import { UserContextData } from "../context/UserContext";
 
@@ -39,50 +40,50 @@ function ConfidenceBadge({ value }) {
 }
 
 
-function HistoryRow({ item, handleDetails }) {
+function HistoryRow({ item, handleDetails, t }) {
     const isDisease = item.type === "disease_detection";
 
 
 
     return (
-        <div className="group flex items-center gap-4 bg-white hover:bg-slate-50 border-b border-slate-100 px-4 py-3 transition-colors last:border-0 first:rounded-t-xl last:rounded-b-xl">
+        <div className="group flex items-center gap-3 bg-white hover:bg-slate-50 border-b border-slate-100 px-3 sm:px-4 py-3 transition-colors last:border-0 first:rounded-t-xl last:rounded-b-xl">
             {/* Icon Column */}
             <div className={`flex-none w-8 h-8 rounded-lg flex items-center justify-center ${isDisease ? 'bg-red-50 text-red-500' : 'bg-green-50 text-green-600'}`}>
                 {isDisease ? <MicroscopeIcon /> : <LeafIcon />}
             </div>
 
-            {/* Crop Column */}
-            <div className="flex-none w-24">
-                <div className="text-sm font-bold text-slate-900 truncate">{item.crop}</div>
-                {(item.location && item.location != "string") && (
-                    <div className="flex items-center gap-1 text-[10px] text-slate-400 font-medium lowercase italic ml-5">
+            {/* Main info — takes all available space */}
+            <div className="flex-1 min-w-0">
+                <div className="text-sm font-bold text-slate-900 truncate" title={isDisease ? item.disease : (item.query.length > 10 ? item.query.slice(0, 10) + "..." : item.query || 'Crop Query')}>
+                    {isDisease ? t(`diseases.${item.disease}`, { defaultValue: item.disease }) : (item.query.length > 20 ? item.query.slice(0, 20) + "..." : item.query || t('dashboard.advice.title'))}
+                </div>
+                {(item.location && item.location !== "string") && (
+                    <div className="flex items-center gap-1 text-[10px] text-slate-400 font-medium lowercase italic">
                         <PinIcon /> {item.location.length > 10 ? item.location.slice(0, 10) + "..." : item.location}
+                    </div>
+                )}
+                {isDisease && (
+                    <div className="flex items-center gap-2 mt-0.5">
+                        <span className="text-[12px] font-semibold text-slate-700 truncate">{t('dashboard.disease.detectedLabel', { defaultValue: 'detected' })}</span>
+                        <ConfidenceBadge value={item.confidence} />
                     </div>
                 )}
             </div>
 
-            {/* Result Column - Takes available space */}
-            {isDisease ?
-                <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-
-                        <span className={`text-[13px] font-semibold truncate 'text-slate-700'}`}>
-                            {item.result}
-                        </span>
-                        <ConfidenceBadge value={item.confidence} />
-                    </div>
-                </div> : <div className="flex-1 min-w-0"></div>}
-
-            {/* Date Column */}
-            <div className="flex-none w-28 text-right hidden sm:block">
+            {/* Date — hidden on xs */}
+            <div className="flex-none text-right hidden sm:block">
                 <div className="text-[11px] font-bold text-slate-400 uppercase tracking-tighter">{item.date}</div>
                 <div className="text-[10px] text-slate-300 tabular-nums">{item.time}</div>
             </div>
 
-            {/* Action Column */}
+            {/* Action */}
             <div className="flex-none">
-                <button className={`w-28 h-7 py-4 rounded-full flex items-center justify-center border transition-all hover:scale-110 cursor-pointer active:scale-90 ${isDisease ? 'border-red-200 text-red-500 hover:bg-red-500 hover:text-white' : 'border-green-200 text-green-600 hover:bg-green-600 hover:text-white'}`} onClick={() => handleDetails(item)}>
-                    Details
+                <button
+                    className={`h-8 px-3 sm:px-4 rounded-full flex items-center justify-center gap-1 border transition-all hover:scale-105 cursor-pointer active:scale-90 text-xs font-semibold
+                        ${isDisease ? 'border-red-200 text-red-500 hover:bg-red-500 hover:text-white' : 'border-green-200 text-green-600 hover:bg-green-600 hover:text-white'}`}
+                    onClick={() => handleDetails(item)}
+                >
+                    <span className="hidden sm:inline">{t('history.details', 'Details')}</span>
                     <ArrowIcon />
                 </button>
             </div>
@@ -90,19 +91,20 @@ function HistoryRow({ item, handleDetails }) {
     );
 }
 
-function SectionHeader({ label, count, colorClass }) {
+function SectionHeader({ label, count, colorClass, t }) {
     return (
         <div className="flex items-center gap-3 mb-3 px-1">
             <h2 className={`text-xs font-black uppercase tracking-[0.2em] ${colorClass}`}>
                 {label}
             </h2>
             <span className="h-px flex-1 bg-slate-100" />
-            <span className="text-[10px] font-bold text-slate-300">{count} ITEMS</span>
+            <span className="text-[10px] font-bold text-slate-300">{count} {t('history.items', 'ITEMS')}</span>
         </div>
     );
 }
 
 export default function History() {
+    const { t } = useTranslation()
     const navigate = useNavigate();
 
     const [queries, setQueries] = useState([]);
@@ -112,7 +114,7 @@ export default function History() {
 
     function handleDetails(item) {
         if (item.type === "disease_detection") {
-            navigate(`/chat?session=${item.id}`);
+            navigate(`/disease/${item.id}`);
         } else {
             navigate(`/chat?session=${item.id}`);
         }
@@ -137,18 +139,25 @@ export default function History() {
                         hour: '2-digit',
                         minute: '2-digit'
                     });
-                    item = {
-                        ...item,
-                        crop: item.cropdata.crop,
-                        location: item.cropdata.location,
-                        query: item.cropdata.query,
-                        date,
-                        time,
-                    }
+
 
                     if (item.type === "disease_detection") {
+                        item = {
+                            ...item,
+                            date,
+                            time,
+                        }
                         setDiseaseItems((prev) => [...prev, item]);
                     } else {
+                        item = {
+                            ...item,
+                            crop: item.cropdata?.crop || null,
+                            location: item.cropdata?.location || 'Unknown location',
+                            query: item.cropdata?.query || '',
+                            date,
+                            time,
+
+                        }
                         setCropItems((prev) => [...prev, item]);
                     }
                     return item;
@@ -175,10 +184,10 @@ export default function History() {
                 <header className="mb-8 flex items-center justify-between border-b border-slate-200 pb-4">
                     <div className="flex items-center gap-4">
                         <div className="w-1.5 h-8 bg-slate-900 rounded-full" />
-                        <h1 className="text-2xl font-black tracking-tighter uppercase">History</h1>
+                        <h1 className="text-2xl font-black tracking-tighter uppercase">{t('nav.history', 'History')}</h1>
                     </div>
                     <div className="flex flex-col items-end">
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Queries</span>
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('history.totalQueries', 'Total Queries')}</span>
                         <span className="text-lg font-black leading-none">{queries.length}</span>
                     </div>
                 </header>
@@ -186,20 +195,20 @@ export default function History() {
                 <main className="space-y-8">
                     {/* Disease Section */}
                     <section>
-                        <SectionHeader label="Disease Detection" count={diseaseItems.length} colorClass="text-red-500" />
+                        <SectionHeader label={t('dashboard.disease.title', 'Disease Detection')} count={diseaseItems.length} colorClass="text-red-500" t={t} />
                         <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
                             {diseaseItems.map((item) => (
-                                <HistoryRow key={item.id} item={item} handleDetails={handleDetails} />
+                                <HistoryRow key={item.id} item={item} handleDetails={handleDetails} t={t} />
                             ))}
                         </div>
                     </section>
 
                     {/* Crop Advice Section */}
                     <section>
-                        <SectionHeader label="Crop Advice/Problem" count={cropItems.length} colorClass="text-green-600" />
+                        <SectionHeader label={t('dashboard.advice.title', 'Crop Advice/Problem')} count={cropItems.length} colorClass="text-green-600" t={t} />
                         <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
                             {cropItems.map((item) => (
-                                <HistoryRow key={item.id} item={item} handleDetails={handleDetails} />
+                                <HistoryRow key={item.id} item={item} handleDetails={handleDetails} t={t} />
                             ))}
                         </div>
                     </section>
