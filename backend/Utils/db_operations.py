@@ -1,7 +1,8 @@
 from models import OTPCode, UserReq, User, ChatSession, CropAdvice, Expert, Message, ExpertRequests, Locations, MessageData, DiseaseDetection
 from sqlmodel import Session
-from database import engine
+from database import engine, get_session
 from sqlalchemy import select, and_, func
+from fastapi import Depends
 
 def addOTP(session: Session, user: UserReq):
     try:
@@ -42,7 +43,7 @@ def get_suggestion(crop, district=None, disease=None):
     """Fetches agricultural advice and suggestions from the database.
 
     Args:
-        crop (str): The name of the crop (e.g., 'rice', 'cotton').
+        crop (str): The name of the crop (e.g., 'rice', 'cotton'), This takes crop name in english.
         district (str, optional): The district where the farm is located.
         disease (str, optional): The name of the disease affecting the crop.
 
@@ -51,9 +52,7 @@ def get_suggestion(crop, district=None, disease=None):
     """
     
     crop = crop.strip().lower()
-    
-    
-    print(crop, district)
+
     with Session(engine) as session:
         if district == None and disease == None:
             stmt = select(CropAdvice.id,
@@ -82,7 +81,7 @@ def get_suggestion(crop, district=None, disease=None):
             )
             crop_advice = session.execute(stmt).mappings().all()
             if crop_advice==[]:
-                return get_suggestion(crop)
+                return get_suggestion(session, crop)
             return [dict(row) for row in crop_advice]
 
         elif district==None and disease!=None:
@@ -98,7 +97,7 @@ def get_suggestion(crop, district=None, disease=None):
             )
             crop_advice = session.execute(stmt).mappings().all()
             if crop_advice==[]:
-                return get_suggestion(crop)
+                return get_suggestion(session, crop)
             return [dict(row) for row in crop_advice]
         else:
             disease = disease.strip().lower()
@@ -116,10 +115,9 @@ def get_suggestion(crop, district=None, disease=None):
             )
             crop_advice = session.execute(stmt).mappings().all()
             if crop_advice==[]:
-                return get_suggestion(crop, district) + get_suggestion(crop, disease=disease)
+                return get_suggestion(session, crop, district) + get_suggestion(session, crop, disease=disease)
             return [dict(row) for row in crop_advice]
 
-    return crop_advice
 
 def get_crop_data_from_chat_sessions(session: Session, sessionId):
     session_record = session.query(ChatSession).filter(ChatSession.id==sessionId).first()
@@ -149,7 +147,7 @@ def getExpert(session: Session, mobileNo: str):
 def addExpertToDB(session: Session, mobileNo: str, name: str):
     
     try:
-        user = getUser(session, mobileNo)
+        user = getUserFromDB(session, mobileNo)
         if not user:
             user = User(mobileNo=mobileNo, role="expert")
             session.add(user)
@@ -203,8 +201,7 @@ def addExpertRequest(session: Session, sessionId):
             ).group_by(
                 Expert.user_id
             ).order_by(
-                func.count(ExpertRequests.id).asc(),
-                Expert.rating.desc()
+                func.count(ExpertRequests.id).asc()
             ).first().user_id
         expert_request = ExpertRequests(
             session_id=sessionId,
@@ -212,6 +209,7 @@ def addExpertRequest(session: Session, sessionId):
             status="pending"
         )
         session.add(expert_request)
+        session.query(ChatSession).filter(ChatSession.id == sessionId).update({"escalated": True})
         session.commit()
         return session.query(Expert).filter(Expert.user_id == expertId).first()
     except Exception as e:
@@ -268,8 +266,6 @@ def getChatSessions(session: Session, userId: int):
             "cropdata": result.cropdata,
             "user_id": result.user_id,
             "created_at": result.created_at,
-            "satisfied": result.satisfied,
-            "closed": result.closed,
             "escalated": result.escalated,
             "type": "crop_advice"
         })
@@ -325,4 +321,112 @@ def getDiseaseDetectionHistory(session: Session, userId: int):
             "created_at": result.created_at,
             "type": "disease_detection"
         })
-    return ans  
+    return ans
+
+
+def getDiseaseDetectionById(session: Session, detectionId: int, userId: int):
+    result = session.query(DiseaseDetection).filter(DiseaseDetection.id == detectionId, DiseaseDetection.userId == userId).first()
+    if result:
+        return {
+            "id": result.id,
+            "image": result.image,
+            "disease": result.disease,
+            "confidence": result.confidence,
+            "created_at": result.created_at,
+            "type": "disease_detection"
+        }
+    return None
+
+def getExpertDashboard(session: Session, expert_id: int = None):
+    """
+    Get dashboard data for experts.
+    Returns: {pending: [], answered: []}
+    - pending: expert_requests with status pending/in_progress for this expert
+    - answered: expert_requests with status answered/closed for this expert
+    """
+    def _build_session_item(req, cs, user):
+        return {
+            "session_id": str(cs.id),
+            "cropdata": cs.cropdata or {},
+            "farmer_mobile": user.mobileNo if user else None,
+            "user_id": cs.user_id,
+            "created_at": cs.created_at.isoformat() if cs.created_at else None,
+            "escalated": cs.escalated,
+            "expert_request_status": req.status,
+            "expert_request_id": req.id,
+        }
+
+    pending = []
+    answered = []
+
+    if not expert_id:
+        return {"pending": pending, "answered": answered}
+
+    all_requests = (
+        session.query(ExpertRequests)
+        .filter(ExpertRequests.expert_id == expert_id)
+        .order_by(ExpertRequests.created_at.desc())
+        .all()
+    )
+
+    for req in all_requests:
+        cs = session.query(ChatSession).filter(ChatSession.id == req.session_id).first()
+        if not cs:
+            continue
+        user = session.query(User).filter(User.id == cs.user_id).first()
+        item = _build_session_item(req, cs, user)
+
+        if req.status in ("pending", "in_progress"):
+            pending.append(item)
+        elif req.status in ("answered", "closed"):
+            answered.append(item)
+
+    return {"pending": pending, "answered": answered}
+
+
+def getTotalFarmers(session: Session):
+    total_users = session.query(func.count(User.id))\
+        .filter(User.role == "farmer")\
+        .scalar()
+    return total_users
+
+def getExpertsList(session: Session):
+    total_experts = session.query(
+        Expert.user_id,
+        Expert.name,
+        Expert.is_available,
+        User.mobileNo
+    ).join(User, User.id == Expert.user_id).all()
+    return total_experts
+
+def getChatSessionsList(session: Session):
+    sessions = session.query(func.count(ChatSession.id)).scalar()
+    return sessions
+
+
+
+def getEscalatedChatSessionCount(session: Session):
+    escalated_sessions = session.query(func.count(ChatSession.id))\
+        .filter(ChatSession.escalated == True)\
+        .scalar()
+    return escalated_sessions
+
+def getBotChatSessionCount(session: Session):
+    bot_sessions = session.query(func.count(ChatSession.id))\
+        .filter(ChatSession.escalated == False)\
+        .scalar()
+    return bot_sessions
+
+
+
+def getTotalDiseaseDetectionsCount(session: Session):
+    total_scans = session.query(func.count(DiseaseDetection.id)).scalar()
+    return total_scans
+
+
+def getExpertReqByStatus(session: Session):
+    expert_req_by_status = session.query(
+        ExpertRequests.status,
+        func.count(ExpertRequests.id).label("count")
+    ).group_by(ExpertRequests.status).all()
+    return expert_req_by_status

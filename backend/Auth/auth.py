@@ -1,17 +1,19 @@
 from datetime import datetime, timedelta, timezone
 import secrets
 import string
+from database import get_session
 import bcrypt
 from Utils.messageSending import TwillioClient
 from models import UserReq
-from Utils.db_operations import addOTP, getOtp, setOtpUsed
+from Utils.db_operations import addOTP, getOtp, getUserFromDB, setOtpUsed
 from fastapi.security import OAuth2PasswordBearer
 import jwt
 from jwt.exceptions import InvalidTokenError
-from fastapi import status, HTTPException
+from fastapi import status, HTTPException, Depends
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/verify")
 
+ACCESS_TOKEN_EXPIRE_MINUTES = 10080
 
 SECRET_KEY = "75b123488ab460702dd19f965580c8c8b2d99b9dfd7a2e5c6c68fac8198f2449"
 ALGORITHM = "HS256"
@@ -39,7 +41,6 @@ class OTP:
         return added
 
     def verifyOTP(self, session, mobile_number: str, otp: str):
-        # Logic to verify the OTP for the given mobile number
         otp_record = getOtp(session, mobile_number)
         if not otp_record:
             raise ValueError("Failed to verify OTP")
@@ -79,10 +80,27 @@ class JWTOperations:
         )
         try: 
             payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+            print(payload)
             mobileNo = payload.get("phno")
+            print(mobileNo, payload)
             if mobileNo is None:
                 raise credential_exception
         except InvalidTokenError:
             raise credential_exception
         return mobileNo
-
+    
+    @staticmethod
+    def refresh(refresh_token: str, session = Depends(get_session)):
+        mobileNo = JWTOperations.decode_jwt(refresh_token)
+        
+        user = getUserFromDB(session, mobileNo)
+        
+        if user is None:
+            raise HTTPException(
+                status_code = status.HTTP_401_UNAUTHORIZED,
+                detail="Incorrect username or password",
+                headers={"WWW-Authenticate": "Bearer"}
+            )
+        access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        access_token = JWTOperations.create_access_token(mobileNo, access_token_expires)
+        return access_token
