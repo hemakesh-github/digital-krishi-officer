@@ -1,19 +1,11 @@
 import { useState, useRef } from 'react'
-import { useLocation } from 'react-router-dom'
-
-const DUMMY_RESULT = {
-    disease: 'Leaf Blight',
-    confidence: 87,
-    severity: 'Moderate',
-    description: 'Leaf Blight is a fungal disease caused by Helminthosporium oryzae. It typically affects leaves, causing brown lesions with yellow halos that coalesce under humid conditions.',
-    treatments: [
-        { title: 'Fungicide Application', detail: 'Spray Mancozeb 75 WP @ 2.5 g/L or Carbendazim 50 WP @ 1 g/L. Repeat every 10–14 days.' },
-        { title: 'Remove Infected Material', detail: 'Remove and destroy heavily infected leaves to reduce disease spread to healthy tissue.' },
-        { title: 'Preventive Measures', detail: 'Maintain proper plant spacing for airflow. Avoid overhead irrigation to keep leaves dry.' },
-    ],
-}
+import { useLocation, useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
+import { detectDisease } from '../api_services/api_services'
 
 export default function DiseasePrediction() {
+    const { t } = useTranslation()
+    const navigate = useNavigate()
     const { state: navState } = useLocation()
 
     const [image, setImage] = useState(null)
@@ -21,30 +13,66 @@ export default function DiseasePrediction() {
     const [dragging, setDragging] = useState(false)
     const [loading, setLoading] = useState(false)
     const [result, setResult] = useState(navState?.result || null)
-    const inputRef = useRef()
+    const [error, setError] = useState(null)
+    const uploadRef = useRef()
+    const cameraRef = useRef()
 
     const handleFile = (file) => {
         if (!file || !file.type.startsWith('image/')) return
-        setImage(file); setPreview(URL.createObjectURL(file)); setResult(null)
+        setImage(file); setPreview(URL.createObjectURL(file)); setResult(null); setError(null)
     }
     const onDrop = (e) => { e.preventDefault(); setDragging(false); handleFile(e.dataTransfer.files[0]) }
-    const clearImage = () => { setImage(null); setPreview(null); setResult(null); if (inputRef.current) inputRef.current.value = '' }
+    const clearImage = () => {
+        setImage(null); setPreview(null); setResult(null); setError(null);
+        if (uploadRef.current) uploadRef.current.value = ''
+        if (cameraRef.current) cameraRef.current.value = ''
+    }
+
     const handleAnalyze = async () => {
         if (!image) return
         setLoading(true)
-        await new Promise(r => setTimeout(r, 2000))
-        setResult(DUMMY_RESULT)
-        setLoading(false)
+        setResult(null)
+        setError(null)
+        try {
+            const data = await detectDisease(image)
+            if (data?.success) {
+                const conf = parseFloat(String(data.confidence).replace('%', ''))
+                setResult({
+                    id: data.sessionId,
+                    disease: data.disease,
+                    confidence: isNaN(conf) ? 0 : conf,
+                    imageUrl: data.image_path ? `https://192.168.0.100:8000/${data.image_path}` : null
+                })
+            } else {
+                setError(data?.detail || 'Detection failed. Please try again.')
+            }
+        } catch (err) {
+            setError(err?.response?.data?.detail || 'Could not reach the server.')
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    const handleViewDetails = () => {
+        if (!result) return
+        navigate(`/disease/${result.id}`, {
+            state: {
+                id: result.id,
+                crop: 'Crop',
+                result: `${result.disease} detected (${result.confidence}%)`,
+                date: new Date().toISOString(),
+                imageUrl: result.imageUrl
+            }
+        })
     }
 
     return (
-        <div className="animate-fade-in p-6 lg:p-8 min-h-screen">
-
+        <div className="animate-fade-in p-6 lg:p-8 flex-1">
             {/* Page header */}
             <div className="mb-6">
-                <h1 className="text-2xl lg:text-3xl font-extrabold tracking-tight text-foreground">Disease Detection</h1>
+                <h1 className="text-2xl lg:text-3xl font-extrabold tracking-tight text-foreground">{t('dashboard.disease.title')}</h1>
                 <p className="text-sm text-muted-fg mt-1">
-                    Upload a crop photo for AI-powered disease diagnosis
+                    {t('dashboard.disease.pageSubtitle', 'Upload a crop photo for AI-powered disease diagnosis')}
                 </p>
             </div>
 
@@ -56,12 +84,12 @@ export default function DiseasePrediction() {
                     <div className="px-5 py-4 border-b border-border flex items-center gap-2.5">
                         <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center text-base">📷</div>
                         <div>
-                            <div className="font-semibold text-foreground text-sm">Image Upload</div>
-                            <div className="text-muted-fg text-xs mt-0.5">Upload a plant image to analyze</div>
+                            <div className="font-semibold text-foreground text-sm">{t('dashboard.disease.uploadTitle')}</div>
+                            <div className="text-muted-fg text-xs mt-0.5">{t('dashboard.disease.uploadSubtitle')}</div>
                         </div>
                     </div>
 
-                    <div className="p-5 flex flex-col gap-4 flex-1">
+                    <div className="p-5 flex flex-col gap-4 align-center justify-center">
                         {/* Drop zone / preview */}
                         {preview ? (
                             <div className="relative rounded-xl overflow-hidden border border-border group">
@@ -76,21 +104,30 @@ export default function DiseasePrediction() {
                             </div>
                         ) : (
                             <div
-                                onClick={() => inputRef.current?.click()}
                                 onDragOver={e => { e.preventDefault(); setDragging(true) }}
                                 onDragLeave={() => setDragging(false)}
                                 onDrop={onDrop}
-                                className={`h-56 rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-2 cursor-pointer transition-all duration-200
-                                    ${dragging ? 'border-foreground bg-muted scale-[1.02]' : 'border-border bg-muted hover:border-foreground/40'}`}
+                                className={`rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-3 py-10 transition-all duration-200
+                                    ${dragging ? 'border-foreground bg-muted scale-[1.02]' : 'border-border bg-muted'}`}
                             >
-                                <span className="text-4xl">{dragging ? '🎯' : '📷'}</span>
-                                <p className="text-sm font-semibold text-foreground">
-                                    Drag and drop or <span className="underline">click to select</span>
+                                <span className="text-4xl">{dragging ? '🎯' : '🌿'}</span>
+                                <p className="text-sm text-muted-fg text-center leading-relaxed">
+                                    {t('dashboard.disease.dragDrop')}
                                 </p>
-                                <p className="text-xs text-muted-fg">JPG · PNG · WEBP</p>
+                                <div className="flex gap-2 w-full px-8 mt-2">
+                                    <button type="button" onClick={() => uploadRef.current?.click()}
+                                        className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-border bg-card text-xs font-semibold text-foreground hover:border-foreground/40 transition-all cursor-pointer">
+                                        📁 {t('dashboard.disease.browseFiles')}
+                                    </button>
+                                    <button type="button" onClick={() => cameraRef.current?.click()}
+                                        className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-border bg-card text-xs font-semibold text-foreground hover:border-foreground/40 transition-all cursor-pointer">
+                                        📷 {t('dashboard.disease.takePhoto')}
+                                    </button>
+                                </div>
                             </div>
                         )}
-                        <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={e => handleFile(e.target.files[0])} />
+                        <input ref={uploadRef} type="file" accept="image/*" className="hidden" onChange={e => handleFile(e.target.files[0])} />
+                        <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={e => handleFile(e.target.files[0])} />
 
                         {/* Analyze button */}
                         <button
@@ -107,19 +144,10 @@ export default function DiseasePrediction() {
                                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
                                     </svg>
-                                    Analyzing...
+                                    {t('dashboard.disease.analyzingImage')}
                                 </>
-                            ) : '🔍 Analyze Image'}
+                            ) : `🔍 ${t('dashboard.disease.predictButton')}`}
                         </button>
-
-                        {/* Model info pills */}
-                        <div className="flex flex-wrap gap-2">
-                            {[['🤖', 'InceptionV3 CNN'], ['📊', '95.3% Accuracy'], ['🌱', '50+ Diseases']].map(([ico, lbl]) => (
-                                <span key={lbl} className="flex items-center gap-1.5 text-[11px] bg-muted text-foreground px-2.5 py-1 rounded-full border border-border font-medium">
-                                    <span>{ico}</span>{lbl}
-                                </span>
-                            ))}
-                        </div>
                     </div>
                 </div>
 
@@ -128,8 +156,8 @@ export default function DiseasePrediction() {
                     <div className="px-5 py-4 border-b border-border flex items-center gap-2.5">
                         <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center text-base">📊</div>
                         <div>
-                            <div className="font-semibold text-foreground text-sm">Analysis Results</div>
-                            <div className="text-muted-fg text-xs mt-0.5">AI diagnosis output</div>
+                            <div className="font-semibold text-foreground text-sm">{t('dashboard.disease.analysisTitle')}</div>
+                            <div className="text-muted-fg text-xs mt-0.5">{t('dashboard.disease.analysisSubtitle')}</div>
                         </div>
                     </div>
 
@@ -140,62 +168,54 @@ export default function DiseasePrediction() {
                                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
                                 </svg>
-                                <p className="text-sm font-semibold text-foreground">Analyzing image...</p>
-                                <p className="text-xs text-muted-fg">Running InceptionV3 model</p>
+                                <p className="text-sm font-semibold text-foreground">{t('dashboard.disease.analyzingImage')}</p>
                             </div>
                         ) : result ? (
-                            <>
+                            <div className="flex-1 flex flex-col">
                                 {/* Disease + confidence */}
-                                <div className="flex items-start justify-between gap-3 flex-wrap">
+                                <div className="flex items-center justify-between gap-3 flex-wrap">
                                     <div>
-                                        <p className="text-[11px] text-muted-fg font-semibold uppercase tracking-wider mb-1">Detected Disease</p>
-                                        <h2 className="text-xl font-extrabold text-foreground leading-tight">{result.disease}</h2>
-                                        <p className="text-xs text-muted-fg mt-0.5">Severity: <span className="font-semibold text-foreground">{result.severity}</span></p>
+                                        <p className="text-[11px] text-muted-fg font-semibold uppercase tracking-wider mb-1">{t('dashboard.disease.detectedDisease')}</p>
+                                        <h2 className="text-xl font-extrabold text-foreground leading-tight">{t(`diseases.${result.disease}`, result.disease)}</h2>
                                     </div>
                                     <span className="text-sm font-bold px-3 py-1.5 rounded-full bg-muted text-foreground border border-border">
-                                        {result.confidence}% match
+                                        {result.confidence}% {t('dashboard.disease.match')}
                                     </span>
                                 </div>
 
                                 {/* Confidence bar */}
-                                <div className="h-1.5 bg-muted rounded-full overflow-hidden border border-border">
+                                <div className="h-1.5 bg-muted rounded-full overflow-hidden border border-border mt-4 mb-auto">
                                     <div
                                         className="h-full bg-foreground rounded-full transition-all duration-700"
                                         style={{ width: `${result.confidence}%` }}
                                     />
                                 </div>
 
-                                {/* Description */}
-                                <div className="bg-muted rounded-xl p-3.5 border border-border">
-                                    <p className="text-[11px] font-semibold text-muted-fg uppercase tracking-wider mb-1.5">Description</p>
-                                    <p className="text-sm text-foreground leading-relaxed">{result.description}</p>
-                                </div>
-
-                                {/* Treatments */}
-                                <div>
-                                    <p className="text-[11px] font-semibold text-muted-fg uppercase tracking-wider mb-2.5">Treatment Recommendations</p>
-                                    <div className="flex flex-col gap-2.5">
-                                        {result.treatments.map((t, i) => (
-                                            <div key={i} className="flex gap-3 bg-muted rounded-xl p-3 border border-border">
-                                                <div className="w-5 h-5 rounded-full bg-foreground text-card flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">
-                                                    {i + 1}
-                                                </div>
-                                                <div>
-                                                    <p className="text-xs font-bold text-foreground">{t.title}</p>
-                                                    <p className="text-xs text-muted-fg mt-0.5 leading-relaxed">{t.detail}</p>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            </>
+                                <button
+                                    onClick={handleViewDetails}
+                                    className="mt-6 w-full py-2.5 rounded-xl font-semibold text-sm bg-foreground text-card hover:bg-foreground/90 active:scale-95 cursor-pointer border-none flex items-center justify-center gap-2 transition-all duration-150"
+                                >
+                                    {t('dashboard.disease.viewDetails')}
+                                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5">
+                                        <path d="M5 12h14" /><path d="m12 5 7 7-7 7" />
+                                    </svg>
+                                </button>
+                            </div>
+                        ) : error ? (
+                            <div className="flex-1 flex flex-col items-center justify-center gap-3 py-12 text-center">
+                                <div className="text-4xl">⚠️</div>
+                                <p className="text-sm font-semibold text-red-600">{error}</p>
+                                <button onClick={handleAnalyze} className="px-4 py-2 bg-foreground text-card text-xs font-semibold rounded-lg hover:bg-foreground/90 transition border-none cursor-pointer">
+                                    ↻ {t('dashboard.disease.retry')}
+                                </button>
+                            </div>
                         ) : (
                             <div className="flex-1 flex flex-col items-center justify-center gap-3 py-12 text-center">
                                 <div className="w-14 h-14 rounded-2xl bg-muted border border-border flex items-center justify-center text-3xl">
                                     🌱
                                 </div>
-                                <p className="text-sm font-semibold text-foreground">Upload and analyze an image</p>
-                                <p className="text-xs text-muted-fg max-w-48">Results will appear here after AI analysis</p>
+                                <p className="text-sm font-semibold text-foreground">{t('dashboard.disease.uploadAnalyzePrompt')}</p>
+                                <p className="text-xs text-muted-fg max-w-48">{t('dashboard.disease.resultsAppearPrompt')}</p>
 
                             </div>
                         )}

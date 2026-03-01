@@ -1,19 +1,24 @@
-export const setToken = async (token) => {
-    localStorage.setItem('token', token);
-}
+import { apiClient } from '../api_services/client'
 
-export const getToken = async () => {
-    return localStorage.getItem('token');
-}
+export const setToken = async () => true
 
-export const removeToken = async () => {
-    localStorage.removeItem('token');
-}
+export const getToken = async () => null
+
+export const removeToken = async () => true
 
 export const checkAuth = async () => {
-    return localStorage.getItem('token') !== null;
+    try {
+        const response = await apiClient.get('auth/getUser')
+        return Boolean(response?.data?.success)
+    } catch {
+        return false
+    }
 }
 
 export const logout = async () => {
-    localStorage.removeItem('token');
+    try {
+        await apiClient.post('auth/logout')
+    } catch (error) {
+        console.error('Logout failed:', error)
+    }
 }
