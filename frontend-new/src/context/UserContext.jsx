@@ -7,6 +7,7 @@ function UserContext({ children }) {
     const [mobileNo, setMobileNo] = useState(null);
     const [type, setType] = useState(null);
     const [userId, setUserId] = useState(null);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         async function fetchUser() {
@@ -23,13 +24,15 @@ function UserContext({ children }) {
                 }
             } catch (error) {
                 console.error(error);
+            } finally {
+                setLoading(false);
             }
         }
         fetchUser();
     }, [])
     console.log(mobileNo, type, userId);
     return (
-        <UserContextData.Provider value={{ mobileNo, setMobileNo, type, setType, userId, setUserId }}>
+        <UserContextData.Provider value={{ mobileNo, setMobileNo, type, setType, userId, setUserId, loading }}>
             {children}
         </UserContextData.Provider>
     )

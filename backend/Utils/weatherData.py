@@ -7,9 +7,7 @@ API_KEY = os.getenv("WEATHER_API_KEY")
 
 class WeatherData:
     @staticmethod
-    def getCurrentWeatherData(lat, lon):
-        # Logic to fetch weather data for the given location
-        
+    def getCurrentWeatherData(lat, lon):        
         params = {
             'lat': lat,  # Placeholder latitude
             'lon': lon,  # Placeholder longitude
@@ -38,8 +36,6 @@ class WeatherData:
 
     @staticmethod
     def parseResponse(data):
-        # Logic to parse the weather data response and extract relevant information
-        # print(data)
         if (len(data) == 0):
             return
         elif ("message" in data):
@@ -61,12 +57,6 @@ class WeatherData:
                         
         return parsed
 
-    @staticmethod
-    def getLatLong( location: str):
-        # Logic to fetch latitude for the given location
-        
-
-        return (23.0153, 70.0)
 
     @staticmethod
     def weather_advice( temp, humidity, wind, rain):

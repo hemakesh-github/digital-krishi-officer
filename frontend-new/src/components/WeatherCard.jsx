@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import LocationSelector from './LocationSelector'
 import { getWeather } from '../api_services/api_services'
 
@@ -32,16 +33,16 @@ function weatherIcon(condition = '') {
     return '☀️'
 }
 
-/** Short day label from unix timestamp */
-function dayLabel(unixTs, index) {
-    if (index === 0) return 'Today'
-    if (index === 1) return 'Tomorrow'
-    return new Date(unixTs * 1000).toLocaleDateString('en-IN', { weekday: 'short' })
+function dayLabel(unixTs, index, t, i18n) {
+    if (index === 0) return t('dashboard.weather.today', 'Today')
+    if (index === 1) return t('dashboard.weather.tomorrow', 'Tomorrow')
+    return new Date(unixTs * 1000).toLocaleDateString(i18n.language === 'te' ? 'te-IN' : 'en-IN', { weekday: 'short' })
 }
 
 /* ── component ─────────────────────────────────────────────── */
 export default function WeatherCard() {
-    const [state, setState] = useState('')
+    const { t, i18n } = useTranslation()
+    const [state, setState] = useState('Andhra Pradesh')
     const [district, setDistrict] = useState('')
     const [city, setCity] = useState('')
 
@@ -61,7 +62,7 @@ export default function WeatherCard() {
         getWeather(state, district, city).then(data => {
             if (cancelled) return
             if (!data || !Array.isArray(data) || !Array.isArray(data[0])) {
-                setError('Could not load weather data.')
+                setError(t('dashboard.weather.error', 'Could not load weather data.'))
                 setLoading(false)
                 return
             }
@@ -75,7 +76,7 @@ export default function WeatherCard() {
             const forecast = days.slice(0, 5).map((entries, i) => {
                 const rep = dayRepresentative(entries)
                 return {
-                    day: dayLabel(rep.Date, i),
+                    day: dayLabel(rep.Date, i, t, i18n),
                     temp: `${Math.round(rep.temperature)}°C`,
                     icon: weatherIcon(rep.weather),
                     rain: rep.rain > 0 ? `${rep.rain} mm` : '0 mm',
@@ -85,7 +86,7 @@ export default function WeatherCard() {
             setWeather({ current, forecast, advisory })
             setLoading(false)
         }).catch(() => {
-            if (!cancelled) { setError('Failed to fetch weather.'); setLoading(false) }
+            if (!cancelled) { setError(t('dashboard.weather.error', 'Failed to fetch weather.')); setLoading(false) }
         })
 
         return () => { cancelled = true }
@@ -99,13 +100,13 @@ export default function WeatherCard() {
             <div className="px-5 py-4 border-b border-border flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center text-base">🌤️</div>
                 <div>
-                    <div className="font-semibold text-foreground text-sm">Weather Conditions</div>
+                    <div className="font-semibold text-foreground text-sm">{t('dashboard.weather.title')}</div>
                     <div className="text-muted-fg text-xs mt-0.5">
                         {locationSet
                             ? (weather?.current
                                 ? `${city}, ${district}`
-                                : loading ? 'Loading...' : 'Select location below')
-                            : 'Select location below'}
+                                : loading ? t('dashboard.weather.loading', 'Loading...') : t('dashboard.weather.selectLocation', 'Select location below'))
+                            : t('dashboard.weather.selectLocation', 'Select location below')}
                     </div>
                 </div>
             </div>
@@ -124,7 +125,7 @@ export default function WeatherCard() {
                     <div className="flex-1 flex flex-col items-center justify-center py-8 gap-2 border-2 border-dashed border-border rounded-xl">
                         <span className="text-3xl">📍</span>
                         <p className="text-xs text-muted-fg text-center leading-relaxed">
-                            Select your state, district &amp;<br />city to view weather
+                            {t('dashboard.weather.selectDistrict', 'Select your district & city to view weather')}
                         </p>
                     </div>
                 )}
@@ -135,7 +136,7 @@ export default function WeatherCard() {
                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
                         </svg>
-                        <p className="text-xs text-muted-fg">Fetching weather...</p>
+                        <p className="text-xs text-muted-fg">{t('dashboard.weather.fetching')}</p>
                     </div>
                 )}
 
@@ -162,9 +163,9 @@ export default function WeatherCard() {
                         {/* ── Stats row ── */}
                         <div className="grid grid-cols-3 gap-2">
                             {[
-                                ['💧', 'Humidity', `${weather.current.humidity}%`],
-                                ['💨', 'Wind', `${weather.current.wind} m/s`],
-                                ['🌧️', 'Rainfall', `${weather.current.rain} mm`],
+                                ['💧', t('dashboard.weather.humidity'), `${weather.current.humidity}%`],
+                                ['💨', t('dashboard.weather.wind'), `${weather.current.wind} m/s`],
+                                ['🌧️', t('dashboard.weather.rainfall', 'Rainfall'), `${weather.current.rain} mm`],
                             ].map(([ico, lbl, val]) => (
                                 <div key={lbl} className="rounded-xl py-3 px-2 flex flex-col items-center gap-1 border border-border bg-muted">
                                     <span className="text-sm">{ico}</span>
@@ -194,12 +195,12 @@ export default function WeatherCard() {
 
                         {/* ── 3-day forecast ── */}
                         <div>
-                            <p className="text-[11px] font-semibold text-muted-fg uppercase tracking-wider mb-2">5-Day Forecast</p>
+                            <p className="text-[11px] font-semibold text-muted-fg uppercase tracking-wider mb-2">{t('dashboard.weather.forecast5day', '5-Day Forecast')}</p>
                             <div className="flex items-center px-3 mb-1 gap-0">
-                                <span className="text-[10px] text-muted-fg font-semibold uppercase tracking-wider w-16">Day</span>
+                                <span className="text-[10px] text-muted-fg font-semibold uppercase tracking-wider w-16">{t('dashboard.weather.day', 'Day')}</span>
                                 <span className="text-[10px] text-muted-fg font-semibold uppercase tracking-wider w-8 text-center"></span>
-                                <span className="text-[10px] text-muted-fg font-semibold uppercase tracking-wider flex-1 text-center">Temp</span>
-                                <span className="text-[10px] text-muted-fg font-semibold uppercase tracking-wider w-12 text-right">Rain</span>
+                                <span className="text-[10px] text-muted-fg font-semibold uppercase tracking-wider flex-1 text-center">{t('dashboard.weather.temp', 'Temp')}</span>
+                                <span className="text-[10px] text-muted-fg font-semibold uppercase tracking-wider w-12 text-right">{t('dashboard.weather.rain', 'Rain')}</span>
                             </div>
                             <div className="flex flex-col gap-1">
                                 {weather.forecast.map(({ day, temp, icon, rain }) => (
