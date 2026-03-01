@@ -1,13 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { getDistricts, getCities } from '../api_services/api_services'
 
-const ALL_STATES = [
-    'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh',
-    'Goa', 'Gujarat', 'Haryana', 'Himachal Pradesh', 'Jharkhand', 'Karnataka',
-    'Kerala', 'Madhya Pradesh', 'Maharashtra', 'Manipur', 'Meghalaya', 'Mizoram',
-    'Nagaland', 'Odisha', 'Punjab', 'Rajasthan', 'Sikkim', 'Tamil Nadu',
-    'Telangana', 'Tripura', 'Uttar Pradesh', 'Uttarakhand', 'West Bengal',
-]
+const FIXED_STATE = 'Andhra Pradesh'
 
 const selCls = `w-full border border-border rounded-xl px-3 py-2.5 text-sm text-foreground bg-card
     focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary
@@ -35,6 +29,12 @@ export default function LocationSelector({
         return () => document.removeEventListener('mousedown', handler)
     }, [])
 
+    useEffect(() => {
+        if (!state) {
+            setState(FIXED_STATE)
+        }
+    }, [state, setState])
+
     // Fetch districts when state changes
     useEffect(() => {
         if (!state) { setDistricts([]); return }
@@ -47,23 +47,16 @@ export default function LocationSelector({
         getCities(district, cityInput.trim()).then(data => setCitySuggestions(data || []))
     }, [district, cityInput])
 
-    const handleState = (v) => { setState(v); setDistrict(''); setCity(''); setCityInput('') }
     const handleDistrict = (v) => { setDistrict(v); setCity(''); setCityInput('') }
     const handleCitySelect = (val) => { setCityInput(val); setCity(val); setDropdownOpen(false) }
 
     return (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
 
-            {/* State — plain select */}
+            {/* State — fixed Andhra Pradesh */}
             <div className="flex flex-col gap-1">
                 <label className="text-[11px] font-semibold text-muted-fg uppercase tracking-wide">State</label>
-                <div className="relative">
-                    <select value={state} onChange={e => handleState(e.target.value)} className={selCls}>
-                        <option value="">Select...</option>
-                        {ALL_STATES.map(s => <option key={s} value={s}>{s}</option>)}
-                    </select>
-                    <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-fg text-xs">▾</span>
-                </div>
+                <input value={FIXED_STATE} disabled className={inputCls} />
             </div>
 
             {/* District — plain select */}
