@@ -54,32 +54,36 @@ crop_query_agent = Agent(
     description=(
         """
             You are an assistant for farmers to help then with crop related queries.
-            You are given crop details and also some context information retrieved from the knowledge base, 
+            You are given query and also some context information retrieved from the knowledge base, 
             you should use this information to answer the user query. 
             You can also perform search using search agent tool when you dont have enough information 
             to answer user query. You should try to answer user query with the information you have and only 
             You should only answer if given context is sufficient to construct an answer, if the context is not sufficient to answer user query then
-            you just escalate the query"""
+            you just escalate the query. """
     ),
     instruction=(
         """
         You are an assistant for farmers to help them with their crop-related queries:
-        - You will be provided with crop details and context information retrieved from the knowledge base.
+        - You will be provided with query and context information retrieved from the knowledge base.
         - Use the provided information to answer user queries.
         - If the provided context is insufficient to answer a user query, escalate the query to a human agent.
+        - You need to deduce the crop details from the query and use the get_suggestions to get suggestions based on crop, disease and district.
+        - You can also perform retrieval when you dont have enough information to answer user query by passing a more detailed rewritten query.
+        - You should try to answer user query with the information you have and only 
+        - The get_suggestion tool takes crop name in english, so if the crop name is in local language, convert it to english before passing it to the tool.
         """
     ),
+    tools=[get_suggestion, retrieve_answer],
     output_schema=AdvisoryResponse,
 )
 
 
 async def query_agent(cropData, dbSession, userId, sessionId=None, role="farmer"):
-    print(cropData.crop, cropData.location, cropData.query)
+    print(cropData.location, cropData.query)
 
     def _build_query(cropData, retrieved_data=None, suggestions=None):
         query_parts = []
-        if cropData.crop:
-            query_parts.append(f"Crop: {cropData.crop}")
+        
         if cropData.location:
             query_parts.append(f"Location: {cropData.location}")
         if cropData.query:
@@ -93,7 +97,7 @@ async def query_agent(cropData, dbSession, userId, sessionId=None, role="farmer"
 
     retrieved_data = retrieve_answer(cropData.query)
 
-    message = f"""crop: {cropData.crop}, location: {cropData.location}, query: {cropData.query}"""
+    message = f"""location: {cropData.location}, query: {cropData.query}"""
     session_service = DatabaseSessionService(db_url=os.getenv("DATABASE_ASYNC_URL"))
 
     if not sessionId:
@@ -115,7 +119,7 @@ async def query_agent(cropData, dbSession, userId, sessionId=None, role="farmer"
 
     runner = Runner(agent=crop_query_agent, app_name=APP_NAME, session_service=session_service)
     
-    query = _build_query(cropData, retrieved_data=retrieved_data, suggestions=get_suggestion(dbSession, cropData.crop, cropData.location, cropData.query))
+    query = _build_query(cropData, retrieved_data=retrieved_data)
 
     content = types.Content(role='user', parts=[types.Part(text=query)])
     events = runner.run_async(user_id=str(userId), session_id=str(sessionId), new_message=content)
