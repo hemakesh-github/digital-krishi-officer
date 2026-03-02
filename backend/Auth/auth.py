@@ -35,7 +35,6 @@ class OTP:
         twilio_client = TwillioClient()
         otp = self.genOTP()
         body = f"Your OTP is for digital krishi officer is : {otp}"
-        print(body)
         # twilio_client.send_sms(to_number=mobile_number, body=body)
         otp_hash = bcrypt.hashpw(otp.encode(), bcrypt.gensalt()).decode()
         for _ in range(3):

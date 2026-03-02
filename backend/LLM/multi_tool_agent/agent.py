@@ -27,12 +27,21 @@ def escalate(session, sessionId: str, language: str):
     Returns:
         id of the expert, name of the expert it is assigned to and a string message
     """
-    while(True):
+    counter = 0
+    expert = None
+    while counter < 5:
         expert = addExpertRequest(session, sessionId)
         if expert:
             break
+        counter += 1
+    
+    if not expert:
+        # Handle case where no expert is available
+        msg = "మా అధికారులు ప్రస్తుతం అందుబాటులో లేరు. దయచేసి తర్వాత ప్రయత్నించండి" if language == "te" else "Our officers are currently unavailable. Please try again later"
+        return {"expert_name": None, "msg": msg}
+    
     msg = f"మీ ప్రశ్నను మా అధికారి {expert.name} త్వరలో పరిష్కరిస్తారు" if language == "te" else f"Your query will be resolved by our officer {expert.name} shortly"
-    return {"exper_name": expert.name, "msg": msg}
+    return {"expert_name": expert.name, "msg": msg}
 
 class AdvisoryResponse(BaseModel):
     crop_name: str = Field(description="Name of the crop")
