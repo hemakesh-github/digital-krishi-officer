@@ -17,6 +17,7 @@ security = HTTPBearer()
 # Disease prediction model instance (loaded at startup)
 disease_predictor = None
 
+ALLOWED_URL = os.getenv("ALLOWED_FRONTEND")
 
 def get_disease_predictor():
     global disease_predictor
@@ -60,7 +61,7 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 60
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://localhost:5173", "http://localhost:5174", "https://127.0.0.1:5174", "https://192.168.0.100:5173"], 
+    allow_origins=["https://localhost:5173", "http://localhost:5174", "https://127.0.0.1:5174", "https://192.168.0.100:5173", ALLOWE_URL], 
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
