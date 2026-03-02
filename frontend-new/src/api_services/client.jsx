@@ -1,7 +1,7 @@
 import axios from 'axios'
 import i18n from '../i18n'
 
-const SERVER_URL = import.meta.env.VITE_API_URL || 'https://192.168.0.100:8000/'
+const SERVER_URL = import.meta.env.VITE_API_URL
 
 axios.defaults.withCredentials = true
 
@@ -59,13 +59,50 @@ const getErrorKey = (error) => {
     return 'default'
 }
 
+const SILENT_ENDPOINTS = [
+    'getUser',
+    '/auth/user',
+    'auth/refresh',
+]
+
+const shouldShowError = (url) => {
+    if (!url) return true
+    const normalizedUrl = url.replace(/^\/+/, '').replace(/^https?:\/\/[^/]+\//, '')
+    return !SILENT_ENDPOINTS.some(endpoint => 
+        normalizedUrl.includes(endpoint) || normalizedUrl.endsWith(endpoint)
+    )
+}
+
 let onErrorCallback = null
+let errorQueue = []
 
 export const setErrorHandler = (callback) => {
     onErrorCallback = callback
+    errorQueue.forEach(({ key, error }) => callback(key, error))
+    errorQueue = []
+}
+
+export const triggerError = (errorKey, error = null) => {
+    if (onErrorCallback) {
+        onErrorCallback(errorKey, error)
+    } else {
+        errorQueue.push({ key: errorKey, error })
+    }
 }
 
 let refreshRequest = null
+
+const wasLoggedIn = () => {
+    return sessionStorage.getItem('wasLoggedIn') === 'true'
+}
+
+export const setWasLoggedIn = (value) => {
+    sessionStorage.setItem('wasLoggedIn', String(value))
+}
+
+export const clearWasLoggedIn = () => {
+    sessionStorage.removeItem('wasLoggedIn')
+}
 
 apiClient.interceptors.response.use(
     (response) => response,
@@ -73,6 +110,20 @@ apiClient.interceptors.response.use(
         const originalRequest = error.config || {}
         const requestUrl = originalRequest?.url || ''
         const statusCode = error?.response?.status
+
+        const isSilentEndpoint = shouldShowError(requestUrl) === false
+        
+        if (isSilentEndpoint) {
+            return Promise.reject(error)
+        }
+
+        const isRefreshCall = requestUrl.includes('auth/refresh')
+
+        if (isRefreshCall && statusCode === 401) {
+            clearWasLoggedIn()
+            window.location.href = '/login'
+            return Promise.reject(error)
+        }
 
         if (onErrorCallback) {
             const errorKey = getErrorKey(error)
@@ -82,7 +133,8 @@ apiClient.interceptors.response.use(
         if (
             statusCode !== 401 ||
             originalRequest?._retry ||
-            requestUrl.includes('auth/refresh')
+            isRefreshCall ||
+            !wasLoggedIn()
         ) {
             throw error
         }
@@ -94,6 +146,9 @@ apiClient.interceptors.response.use(
                 refreshRequest = (async () => {
                     try {
                         await apiClient.post('auth/refresh')
+                    } catch (e) {
+                        refreshRequest = null
+                        throw e
                     } finally {
                         refreshRequest = null
                     }
@@ -103,7 +158,9 @@ apiClient.interceptors.response.use(
             await refreshRequest
             return await apiClient(originalRequest)
         } catch (refreshError) {
-            throw refreshError
+            clearWasLoggedIn()
+            window.location.href = '/login'
+            return Promise.reject(refreshError)
         }
     }
 )

@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { getExpertDashboard } from '../api_services/api_services'
 import { useTranslation } from 'react-i18next'
 
@@ -48,6 +48,8 @@ export default function ExpertDashboard() {
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState('')
     const navigate = useNavigate()
+    const location = useLocation()
+    const prevLocation = useRef(location.pathname)
 
     const load = useCallback(async () => {
         setLoading(true)
@@ -64,7 +66,24 @@ export default function ExpertDashboard() {
         }
     }, [])
 
-    useEffect(() => { load() }, [load])
+    useEffect(() => {
+        load()
+    }, [load])
+
+    useEffect(() => {
+        if (prevLocation.current !== location.pathname) {
+            prevLocation.current = location.pathname
+            if (location.pathname === '/dashboard' || location.pathname.includes('dashboard')) {
+                load()
+            }
+        }
+    }, [location, load])
+
+    useEffect(() => {
+        const handleFocus = () => load()
+        window.addEventListener('focus', handleFocus)
+        return () => window.removeEventListener('focus', handleFocus)
+    }, [load])
 
     const handleOpenSession = sessionId => navigate(`/chat?session=${sessionId}`)
 

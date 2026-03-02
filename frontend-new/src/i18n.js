@@ -152,7 +152,7 @@ const resources = {
                 badRequest: "Something was wrong with your request. Please try again.",
                 unauthorized: "Your session has expired. Please login again.",
                 forbidden: "You don't have permission for this. Please login again.",
-                notFound: "The information you asked for was not found.",
+                notFound: "Information not found",
                 validationError: "Please check your input and try again.",
                 tooManyRequests: "Too many requests. Please wait a moment and try again.",
                 serverError: "Server is busy. Please try again in a few minutes.",

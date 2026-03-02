@@ -1,4 +1,4 @@
-import { apiClient, withAuthHeader } from './client'
+import { apiClient, withAuthHeader, setWasLoggedIn } from './client'
 
 export const genOtp = async (mobileNo, userType) => {
     const formData = new FormData()
@@ -26,6 +26,9 @@ export const verifyOtp = async (mobileNo, otp, userType) => {
         const response = await apiClient.post('auth/verifyOTP', formData, {
             headers: { 'Content-Type': 'application/json' },
         })
+        if (response.data?.success) {
+            setWasLoggedIn(true)
+        }
         return response.data
     } catch (error) {
         console.error('Error:', error)

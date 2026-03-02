@@ -231,16 +231,12 @@ export default function Chat() {
             setInput('')
             setInterimText('') // Clear interim text after sending
 
-            // Expert flow: reply to farmer, show full previous chat
+            // Expert flow: reply to farmer, then go back to dashboard
             if (userData?.type === 'expert') {
                 setIsTyping(true)
                 await sendExpertReply(sessionId, trimmed)
-                const response = await getMessages(sessionId)
-                const first = response?.[0]
-                const firstContent = first?.content
-                setCropName(firstContent?.crop_name || firstContent?.crop || "")
-                setMessages(Array.isArray(response) ? response : [])
                 setIsTyping(false)
+                navigate('/dashboard')
                 return
             }
 

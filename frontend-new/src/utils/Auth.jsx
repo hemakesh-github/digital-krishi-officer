@@ -1,4 +1,4 @@
-import { apiClient } from '../api_services/client'
+import { apiClient, clearWasLoggedIn } from '../api_services/client'
 
 export const setToken = async () => true
 
@@ -16,6 +16,7 @@ export const checkAuth = async () => {
 }
 
 export const logout = async () => {
+    clearWasLoggedIn()
     try {
         await apiClient.post('auth/logout')
     } catch (error) {
