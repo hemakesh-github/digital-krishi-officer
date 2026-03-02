@@ -3,6 +3,12 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { detectDisease } from '../api_services/api_services'
 
+const resolveImageUrl = (imagePath) => {
+    if (!imagePath) return null
+    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) return imagePath
+    return null
+}
+
 export default function DiseasePrediction() {
     const { t } = useTranslation()
     const navigate = useNavigate()
@@ -18,7 +24,21 @@ export default function DiseasePrediction() {
     const cameraRef = useRef()
 
     const handleFile = (file) => {
-        if (!file || !file.type.startsWith('image/')) return
+        if (!file) return;
+
+        if (!file.type.startsWith('image/')) {
+            setError(t('errors.invalidFileType', 'Please upload a valid image file.'));
+            setImage(null); setPreview(null); setResult(null);
+            return;
+        }
+
+        const MAX_SIZE_MB = 5;
+        if (file.size > MAX_SIZE_MB * 1024 * 1024) {
+            setError(t('errors.fileTooLarge', `File size must be less than ${MAX_SIZE_MB}MB.`));
+            setImage(null); setPreview(null); setResult(null);
+            return;
+        }
+
         setImage(file); setPreview(URL.createObjectURL(file)); setResult(null); setError(null)
     }
     const onDrop = (e) => { e.preventDefault(); setDragging(false); handleFile(e.dataTransfer.files[0]) }
@@ -41,13 +61,13 @@ export default function DiseasePrediction() {
                     id: data.sessionId,
                     disease: data.disease,
                     confidence: isNaN(conf) ? 0 : conf,
-                    imageUrl: data.image_path ? `https://192.168.0.100:8000/${data.image_path}` : null
+                    imageUrl: resolveImageUrl(data.image_path)
                 })
             } else {
-                setError(data?.detail || 'Detection failed. Please try again.')
+                setError(data?.userMessage || t('errors.diseaseFriendly'))
             }
         } catch (err) {
-            setError(err?.response?.data?.detail || 'Could not reach the server.')
+            setError(t('errors.diseaseFriendly'))
         } finally {
             setLoading(false)
         }
@@ -204,10 +224,16 @@ export default function DiseasePrediction() {
                         ) : error ? (
                             <div className="flex-1 flex flex-col items-center justify-center gap-3 py-12 text-center">
                                 <div className="text-4xl">⚠️</div>
-                                <p className="text-sm font-semibold text-red-600">{error}</p>
-                                <button onClick={handleAnalyze} className="px-4 py-2 bg-foreground text-card text-xs font-semibold rounded-lg hover:bg-foreground/90 transition border-none cursor-pointer">
-                                    ↻ {t('dashboard.disease.retry')}
-                                </button>
+                                <div className="w-full max-w-md rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-left">
+                                    <p className="text-sm font-semibold text-amber-800">{t('errors.detectionFailed')}</p>
+                                    <p className="text-xs text-amber-700 mt-1">{error}</p>
+                                    <p className="text-xs text-amber-700 mt-1">{t('errors.diseaseGuide')}</p>
+                                </div>
+                                {image && (
+                                    <button onClick={handleAnalyze} className="px-4 py-2 bg-foreground text-card text-xs font-semibold rounded-lg hover:bg-foreground/90 transition border-none cursor-pointer">
+                                        ↻ {t('dashboard.disease.retry')}
+                                    </button>
+                                )}
                             </div>
                         ) : (
                             <div className="flex-1 flex flex-col items-center justify-center gap-3 py-12 text-center">

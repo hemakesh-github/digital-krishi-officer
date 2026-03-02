@@ -10,12 +10,10 @@ from fastapi.security import OAuth2PasswordBearer
 import jwt
 from jwt.exceptions import InvalidTokenError
 from fastapi import status, HTTPException, Depends
-<<<<<<< HEAD
 from dotenv import load_dotenv
+import os
 
 load_dotenv()
-=======
->>>>>>> fbdc8e8b99e9d36f0be6a8a84d44d6e4469d881d
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/verify")
 
@@ -86,9 +84,7 @@ class JWTOperations:
         )
         try: 
             payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-            print(payload)
             mobileNo = payload.get("phno")
-            print(mobileNo, payload)
             if mobileNo is None:
                 raise credential_exception
         except InvalidTokenError:

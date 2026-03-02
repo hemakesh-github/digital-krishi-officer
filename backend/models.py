@@ -21,6 +21,7 @@ class CropData(BaseModel):
     crop: Optional[str] = None
     location: str
     query: str
+    user_language: Optional[str] = None
 
 class ExpertData(BaseModel):
     mobileNo: str
@@ -143,5 +144,16 @@ class DiseaseDetection(Base):
     image = Column(String(255), nullable=False)
     disease = Column(String(255), nullable=False)
     confidence = Column(Float, nullable=False)
+    created_at = Column(TIMESTAMP, server_default=text("CURRENT_TIMESTAMP"))
+
+class Notification(Base):
+    __tablename__ = "notifications"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    session_id = Column(UUID(as_uuid=True), ForeignKey("chat_sessions.id", ondelete="CASCADE"))
+    expert_name = Column(String(50), nullable=True)
+    message = Column(Text, nullable=False)
+    is_read = Column(Boolean, default=False)
     created_at = Column(TIMESTAMP, server_default=text("CURRENT_TIMESTAMP"))
 

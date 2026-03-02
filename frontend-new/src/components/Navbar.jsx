@@ -5,8 +5,8 @@ import { UserContextData } from '../context/UserContext'
 import { useTranslation } from 'react-i18next'
 
 const languages = [
-    { code: 'en', name: 'English', nativeName: 'English', flag: '🇺🇸' },
-    { code: 'te', name: 'Telugu', nativeName: 'తెలుగు', flag: '🇮🇳' }
+    { code: 'en', name: 'English', nativeName: 'English', flag: 'en' },
+    { code: 'te', name: 'Telugu', nativeName: 'తెలుగు', flag: 'te' }
 ]
 /* ── Lucide-style SVG icons ── */
 const IconDashboard = () => (
@@ -157,7 +157,7 @@ function SidebarContent({ navItems, isLoggedIn, onLogout, onLinkClick, currentLa
                         <span className="text-2xl">{currentLang?.flag}</span>
                         <div className="flex-1 text-left">
                             <div className="text-sm font-semibold text-sidebar-fg">{currentLang?.nativeName}</div>
-                            <div className="text-xs text-sidebar-fg/60">{t('language.selectLanguage')}</div>
+                            <div className="text-xs text-sidebar-fg/60">{t('language.changeLanguage')}</div>
                         </div>
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-sidebar-fg/50">
                             <polyline points="9 18 15 12 9 6" />

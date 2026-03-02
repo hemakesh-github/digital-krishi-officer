@@ -8,7 +8,6 @@ import { useTranslation } from 'react-i18next'
 
 function renderMessage(text) {
 
-    console.log(text)
     if (typeof text === 'string') {
         return <p>{text}</p>
     }
@@ -43,23 +42,30 @@ function renderMessage(text) {
 
 
 
-// ── Sender meta ───────────────────────────────────────────────────────────────
 const SENDER = {
     ai: {
         label: 'AI Assistant',
         avatar: '🤖',
-        avatarBg: 'from-green-500 to-emerald-600',
-        badgeBg: 'bg-green-100 text-green-700 border-green-200',
-        bubbleBg: 'bg-white border border-gray-100 text-gray-800 rounded-bl-none',
-        listColor: 'text-green-500',
+        avatarBg: 'from-gray-500 to-gray-700',
+        badgeBg: 'bg-gray-100 text-gray-700 border-gray-200',
+        bubbleBg: 'bg-gray-50 border border-gray-200 text-gray-900 rounded-bl-none shadow-sm',
+        listColor: 'text-gray-500',
     },
     expert: {
         label: 'Expert',
         avatar: '👨‍🌾',
         avatarBg: 'from-amber-500 to-orange-500',
-        badgeBg: 'bg-amber-50 text-amber-700 border-amber-200',
-        bubbleBg: 'bg-amber-50 border border-amber-100 text-gray-800 rounded-bl-none',
+        badgeBg: 'bg-amber-100 text-amber-800 border-amber-300',
+        bubbleBg: 'bg-amber-50 border border-amber-200 text-amber-900 rounded-bl-none shadow-sm',
         listColor: 'text-amber-500',
+    },
+    farmer: {
+        label: 'Farmer',
+        avatar: '🧑‍🌾',
+        avatarBg: 'from-blue-400 to-blue-600',
+        badgeBg: 'bg-blue-100 text-blue-800 border-blue-300',
+        bubbleBg: 'bg-blue-50 border border-blue-200 text-blue-900 rounded-bl-none shadow-sm',
+        listColor: 'text-blue-500',
     },
 }
 
@@ -82,10 +88,20 @@ function TypingIndicator({ role = 'ai' }) {
 }
 
 function ChatBubble({ msg, myRole, t }) {
+    // Normalize role string (e.g. "Agent" -> "agent", "farmer" -> "farmer", etc.)
+    const msgRole = (msg.role || 'ai').toLowerCase()
+
     // isMine = this message was sent by the currently logged-in user
-    const isMine = msg.role === myRole
-    const isExpert = msg.role === 'expert'
-    const s = isMine ? null : SENDER[msg.role] || SENDER.ai
+    // Note: myRole could be 'expert' or 'farmer' depending on user context
+    const isMine = msgRole === myRole
+    const isExpert = msgRole === 'expert'
+
+    // Determine visual style (ai, expert, or farmer fallback)
+    let senderKey = msgRole
+    // If we don't have a direct match in SENDER (e.g. for "agent"), default to "ai"
+    if (!SENDER[senderKey]) senderKey = 'ai'
+
+    const s = isMine ? null : SENDER[senderKey]
 
     // Right-side bubble colours
     const myBubbleBg = myRole === 'expert'
@@ -127,13 +143,13 @@ function ChatBubble({ msg, myRole, t }) {
                             <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${s.badgeBg} flex items-center gap-1`}>
                                 🏅 {t('chat.expert')}
                             </span>
-                        ) : msg.role === 'farmer' ? (
+                        ) : msgRole === 'farmer' || msgRole === 'user' ? (
                             <span className="text-[10px] font-medium px-2 py-0.5 rounded-full border bg-blue-50 text-blue-700 border-blue-200">
-                                🧑‍🌾 {t('chat.farmer')}
+                                🧑‍🌾 Farmer
                             </span>
                         ) : (
                             <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full border ${s.badgeBg}`}>
-                                🤖 {t('chat.ai')}
+                                🤖 AI Bot
                             </span>
                         )}
                     </div>

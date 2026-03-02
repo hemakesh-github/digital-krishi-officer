@@ -56,7 +56,6 @@ def extract_and_load_weekly_advice(session: Session, json_file_path: str):
 
         session.commit()
         msg = f"Successfully processed {len(data)} entries. Added {count} new records."
-        print(msg)
         return msg
 
     except json.JSONDecodeError as e:

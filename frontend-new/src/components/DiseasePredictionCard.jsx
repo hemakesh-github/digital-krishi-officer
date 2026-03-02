@@ -3,6 +3,12 @@ import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { detectDisease } from '../api_services/api_services'
 
+const resolveImageUrl = (imagePath) => {
+    if (!imagePath) return null
+    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) return imagePath
+    return null
+}
+
 export default function DiseasePredictionCard() {
     const { t } = useTranslation()
     const navigate = useNavigate()
@@ -11,16 +17,20 @@ export default function DiseasePredictionCard() {
     const [dragging, setDragging] = useState(false)
     const [loading, setLoading] = useState(false)
     const [result, setResult] = useState(null)
+    const [error, setError] = useState(null)
     const uploadRef = useRef()
     const cameraRef = useRef()
 
     const handleFile = (file) => {
-        if (!file || !file.type.startsWith('image/')) return
-        setImage(file); setPreview(URL.createObjectURL(file)); setResult(null)
+        if (!file || !file.type.startsWith('image/')) {
+            setError(t('errors.invalidFileType'))
+            return
+        }
+        setImage(file); setPreview(URL.createObjectURL(file)); setResult(null); setError(null)
     }
     const onDrop = (e) => { e.preventDefault(); setDragging(false); handleFile(e.dataTransfer.files[0]) }
     const clearImage = () => {
-        setImage(null); setPreview(null); setResult(null)
+        setImage(null); setPreview(null); setResult(null); setError(null)
         if (uploadRef.current) uploadRef.current.value = ''
         if (cameraRef.current) cameraRef.current.value = ''
     }
@@ -28,6 +38,7 @@ export default function DiseasePredictionCard() {
     const handlePredict = async () => {
         if (!image) return
         setLoading(true)
+        setError(null)
         try {
             const data = await detectDisease(image)
             if (data?.success) {
@@ -36,11 +47,13 @@ export default function DiseasePredictionCard() {
                     id: data.sessionId,
                     disease: data.disease,
                     confidence: isNaN(conf) ? 0 : conf,
-                    imageUrl: data.image_path ? `https://192.168.0.100:8000/${data.image_path}` : null
+                    imageUrl: resolveImageUrl(data.image_path)
                 })
+            } else {
+                setError(data?.userMessage || t('errors.diseaseFriendly'))
             }
         } catch (err) {
-            console.error('Disease detection failed:', err)
+            setError(t('errors.diseaseFriendly'))
         } finally {
             setLoading(false)
         }
@@ -111,6 +124,13 @@ export default function DiseasePredictionCard() {
 
                 <input ref={uploadRef} type="file" accept="image/*" className="hidden" onChange={e => handleFile(e.target.files[0])} />
                 <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={e => handleFile(e.target.files[0])} />
+
+                {error && (
+                    <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2">
+                        <p className="text-xs font-semibold text-amber-800">{t('errors.detectionFailed')}</p>
+                        <p className="text-xs text-amber-700 mt-0.5">{error}</p>
+                    </div>
+                )}
 
                 {/* Mini result */}
                 {result && !loading && (

@@ -66,7 +66,6 @@ def get_suggestion(crop, district=None, disease=None):
             )
 
             crop_advice = session.execute(stmt).mappings().all()
-            print(crop_advice)
             return [dict(row) for row in crop_advice]
         elif district!=None and disease==None:
             district=district.strip().lower()
@@ -121,7 +120,6 @@ def get_suggestion(crop, district=None, disease=None):
 
 def get_crop_data_from_chat_sessions(session: Session, sessionId):
     session_record = session.query(ChatSession).filter(ChatSession.id==sessionId).first()
-    print(session_record.cropdata, "hello")
     return session_record.cropdata
  
 
@@ -303,7 +301,8 @@ def addDiseaseDetection(session: Session, userId: int, result: dict, image_path:
         )
         session.add(disease_detection)
         session.commit()
-        return True
+        session.refresh(disease_detection)
+        return disease_detection.id
     except Exception as e:
         session.rollback()
         print(f"Error adding disease detection: {e}")

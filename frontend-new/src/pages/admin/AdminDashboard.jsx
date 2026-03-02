@@ -120,7 +120,7 @@ export default function AdminDashboard() {
             const d = await fetchAdminDashboard();
             setData(d);
         } catch (err) {
-            setError(err?.response?.data?.detail || 'Failed to load dashboard. Is the backend running?');
+            setError('Failed to load dashboard. An unexpected error occurred.');
         } finally { setLoading(false); }
     }, []);
 

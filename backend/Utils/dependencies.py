@@ -7,9 +7,7 @@ from fastapi import HTTPException, status, Depends, Cookie
 
 def verify_token(access_token: str = Cookie(None), session=Depends(get_session)):
     try:    
-        print(access_token)
         mobileNo = JWTOperations.decode_jwt(access_token)
-        print(mobileNo)
         if mobileNo is None:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -17,7 +15,6 @@ def verify_token(access_token: str = Cookie(None), session=Depends(get_session))
                 headers={"WWW-Authenticate": "Bearer"},
             )
         user = getUserFromDB(session, mobileNo)
-        print(access_token, user, mobileNo)  
         if user is None:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,

@@ -6,7 +6,7 @@ from models import ChatSession, Expert, ExpertRequests, MessageData, User
 from fastapi import Depends, HTTPException, status, APIRouter
 from sqlalchemy import func
 from Utils.dependencies import verify_token
-
+from Utils.messageSending import TwillioClient
 
 router = APIRouter()
 
@@ -22,33 +22,45 @@ def expertAdvice(MessageData: MessageData, session=Depends(get_session)):
         addMessage(session, MessageData)
         # Mark the expert request as answered for this session (so it moves off pending)
         try:
-            expert_request = (
-                session.query(ExpertRequests)
-                .filter(ExpertRequests.session_id == MessageData.sessionId)
-                .filter(ExpertRequests.expert_id == session.query(Expert).filter(Expert.user_id == ExpertRequests.expert_id).first().user_id if False else ExpertRequests.expert_id)
-                .first()
-            )
-            # Above filter is intentionally lenient (avoid breaking if no request exists)
+            # Below filter is intentionally lenient (avoid breaking if no request exists)
             expert_request = session.query(ExpertRequests).filter(ExpertRequests.session_id == MessageData.sessionId).first()
             if expert_request:
                 expert_request.status = "answered"
                 try:
-                    
                     expert_request.responded_at = func.now()
                 except Exception:
                     pass
                 session.commit()
         except Exception as e:
+            # Rollback to prevent subsequent queries from failing due to aborted transaction
+            session.rollback()
             # Don't fail message send if request status update fails
             print(f"Expert request status update skipped: {e}")
+            
         chat_session = getChatSession(session, MessageData.sessionId)
         if chat_session:
             user = session.query(User).filter(User.id == chat_session.user_id).first()
-            if user:
+            if user and user.mobileNo:
                 to_number = user.mobileNo
-        # twillio_client = TwillioClient()
-        # msg = "An expert has replied to your query on digital krishi officer application. Please visit the website for details."
-        # twillio_client.send_sms(to_number, msg)
+                try:
+                    twillio_client = TwillioClient()
+                    chat_url = f"http://localhost:5173/chat?session={MessageData.sessionId}"
+                    user_lang = chat_session.cropdata.get('user_language', 'en') if chat_session.cropdata else 'en'
+                    msg = f"An expert has replied to your query on Digital Krishi Officer. View details here: {chat_url}" if user_lang == "en" else f"డిజిటల్ కృషి ఆఫీసర్ లో మీ ప్రశ్నకు నిపుణులు సమాధానం ఇచ్చారు. వివరాలను ఇక్కడ చూడండి: {chat_url}"
+                    # twillio_client.send_sms(to_number, msg)
+                    print(msg)
+                    
+                    from models import Notification
+                    new_notif = Notification(
+                        user_id=user.id,
+                        session_id=MessageData.sessionId,
+                        expert_name="Expert",
+                        message=MessageData.content
+                    )
+                    session.add(new_notif)
+                    session.commit()
+                except Exception as e:
+                    print(f"Failed to send SMS notification via Twilio or save notif: {e}")
 
         return {"success": True, "message": "Reply sent"}
     except Exception as e:

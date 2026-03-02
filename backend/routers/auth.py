@@ -20,7 +20,6 @@ def genOTP(user: UserOTPReq, session=Depends(get_session)):
         raise ValueError("You are not an expert")
     otp_handler = OTP()
     added = otp_handler.sendOTP(session, user.mobileNo)
-    print(getOtp(session, user.mobileNo))
     if not added:
         raise ValueError("Login failed, try again")
     return {"success": True, "message": "OTP generated"}
@@ -31,14 +30,11 @@ def verify(response: Response, userReq: UserReq, session=Depends(get_session)):
     verified = otp_handler.verifyOTP(session, userReq.mobileNo, userReq.otp)
     if (userReq.userType == "expert"):
         user = getExpert(session, userReq.mobileNo)
-        print(user)
         if user is None:
             raise ValueError("You are not an expert")
     else: 
         user = getUserFromDB(session, userReq.mobileNo)
-    print(verified, user.mobileNo if user else "No user")  # Debugging statement
 
-    print("OTP verification result:", verified)
     if verified:
         if user is None:
             user = addUser(session, userReq)
@@ -63,7 +59,6 @@ def verify(response: Response, userReq: UserReq, session=Depends(get_session)):
             max_age = 24 * 60 * 60
         )
         return {"success": True, "mobile_number": user.mobileNo, "userType": user.role, "userId": user.id}
-    print("OTP verification failed", verified)
     return {"success": False, "message": "Invalid OTP"}
 
 
@@ -81,7 +76,6 @@ def getUser(session=Depends(get_session), user = Depends(verify_token)):
         # user = getUser(session, session.mobileNo)
         return {"success": True, "user": user}
     except Exception as e:
-        print(f"Error in getUser endpoint: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to retrieve user"

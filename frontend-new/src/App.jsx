@@ -9,6 +9,7 @@ import Chat from './pages/Chat'
 import Dashboard from './pages/Dashboard'
 import AddExpert from './pages/admin/AddExpert'
 import AppLayout from './components/AppLayout'
+import NotificationToast from './components/NotificationToast'
 import { useContext } from 'react'
 import { UserContextData } from './context/UserContext'
 
@@ -49,26 +50,29 @@ function FarmerRoute({ children }) {
 
 function App() {
     return (
-        <Routes>
-            {/* Login */}
-            <Route path="/login" element={<Login />} />
+        <>
+            <NotificationToast />
+            <Routes>
+                {/* Login */}
+                <Route path="/login" element={<Login />} />
 
-            {/* Unified dashboard — renders admin / expert / farmer content by role */}
-            <Route path="/dashboard" element={
-                <ProtectedRoute>
-                    <Dashboard />
-                </ProtectedRoute>
-            } />
+                {/* Unified dashboard — renders admin / expert / farmer content by role */}
+                <Route path="/dashboard" element={
+                    <ProtectedRoute>
+                        <Dashboard />
+                    </ProtectedRoute>
+                } />
 
-            {/* Farmer-only pages */}
-            <Route path="/addexpert" element={<ProtectedRoute><AppLayout><AddExpert /></AppLayout></ProtectedRoute>} />
-            <Route path="/" element={<FarmerRoute><AppLayout><Home /></AppLayout></FarmerRoute>} />
-            <Route path="/disease" element={<FarmerRoute><AppLayout><DiseasePrediction /></AppLayout></FarmerRoute>} />
-            <Route path="/crop-advice" element={<FarmerRoute><AppLayout><CropAdvice /></AppLayout></FarmerRoute>} />
-            <Route path="/history" element={<FarmerRoute><AppLayout><History /></AppLayout></FarmerRoute>} />
-            <Route path="/disease/:sessionId" element={<FarmerRoute><AppLayout><DiseaseResult /></AppLayout></FarmerRoute>} />
-            <Route path="/chat" element={<FarmerRoute><AppLayout><Chat /></AppLayout></FarmerRoute>} />
-        </Routes>
+                {/* Farmer-only pages */}
+                <Route path="/addexpert" element={<ProtectedRoute><AppLayout><AddExpert /></AppLayout></ProtectedRoute>} />
+                <Route path="/" element={<FarmerRoute><AppLayout><Home /></AppLayout></FarmerRoute>} />
+                <Route path="/disease" element={<FarmerRoute><AppLayout><DiseasePrediction /></AppLayout></FarmerRoute>} />
+                <Route path="/crop-advice" element={<FarmerRoute><AppLayout><CropAdvice /></AppLayout></FarmerRoute>} />
+                <Route path="/history" element={<FarmerRoute><AppLayout><History /></AppLayout></FarmerRoute>} />
+                <Route path="/disease/:sessionId" element={<FarmerRoute><AppLayout><DiseaseResult /></AppLayout></FarmerRoute>} />
+                <Route path="/chat" element={<ProtectedRoute><AppLayout><Chat /></AppLayout></ProtectedRoute>} />
+            </Routes>
+        </>
     )
 }
 

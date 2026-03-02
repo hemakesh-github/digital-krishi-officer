@@ -71,9 +71,10 @@ export default function CropAdviceCard() {
         setLoading(true)
 
         const locationStr = `${city}, ${district}, ${locState}`
+        const userLanguage = sessionStorage.getItem('language') || 'en'
 
         // Call API
-        const response = await cropAdvice(locationStr, query)
+        const response = await cropAdvice(locationStr, query, userLanguage)
         setLoading(false)
 
         if (response) {
@@ -87,8 +88,7 @@ export default function CropAdviceCard() {
                     aiText += `\n\n> ⚠️ **Note:** This issue appears complex and may require expert validation.`
                 }
             }
-            console.log(response)
-            console.log(response.sessionId)
+            
             navigate(`/chat?session=${response.sessionId}`)
         } else {
             alert("Sorry, we couldn't get advice at this moment. Please try again.")

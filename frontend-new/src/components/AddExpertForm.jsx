@@ -45,7 +45,7 @@ export default function AddExpertForm({ onAdded }) {
                 setTimeout(() => { setStatus(null); onAdded?.(); }, 2000);
             } else { setErrMsg(result.message || "Failed to add expert."); setStatus("error"); }
         } catch (err) {
-            setErrMsg(err?.response?.data?.detail || "Could not reach server."); setStatus("error");
+            setErrMsg("Could not reach server. An unexpected error occurred."); setStatus("error");
         } finally { setLoading(false); }
     };
 

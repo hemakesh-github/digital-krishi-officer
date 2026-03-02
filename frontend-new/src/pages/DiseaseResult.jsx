@@ -3,6 +3,12 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getDiseaseResult } from '../api_services/diseaseApi'
 
+const resolveImageUrl = (imagePath) => {
+    if (!imagePath) return null
+    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) return imagePath
+    return null
+}
+
 export default function DiseaseResult() {
     const { t } = useTranslation()
     const { sessionId } = useParams()
@@ -27,7 +33,7 @@ export default function DiseaseResult() {
                             crop: det.crop || 'Crop', // Default since disease_detection doesn't store crop yet
                             result: `${det.disease} detected (${det.confidence}%)`,
                             date: det.created_at,
-                            imageUrl: det.image ? `https://192.168.0.100:8000/${det.image}` : null
+                            imageUrl: resolveImageUrl(det.image)
                         })
                     } else {
                         setError('Detection record not found')

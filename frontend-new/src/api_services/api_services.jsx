@@ -6,6 +6,7 @@ export * from './cropAdviceApi'
 export * from './historyApi'
 export * from './expertApi'
 export * from './diseaseApi'
+export * from './notificationApi'
 
 
 

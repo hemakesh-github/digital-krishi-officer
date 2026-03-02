@@ -1,6 +1,7 @@
 import axios from 'axios'
+import i18n from '../i18n'
 
-const SERVER_URL = 'https://192.168.0.100:8000/'
+const SERVER_URL = import.meta.env.VITE_API_URL || 'https://192.168.0.100:8000/'
 
 axios.defaults.withCredentials = true
 
@@ -13,6 +14,57 @@ export const withAuthHeader = async (headers = {}) => {
     return headers
 }
 
+const getErrorKey = (error) => {
+    const status = error?.response?.status
+    const detail = error?.response?.data?.detail || ''
+    
+    if (!error.response) {
+        if (error.code === 'ECONNABORTED') {
+            return 'serverBusy'
+        }
+        return 'network'
+    }
+
+    if (status === 400) {
+        if (detail?.includes('image') || detail?.includes('photo') || detail?.includes('file')) {
+            return 'invalidImage'
+        }
+        return 'badRequest'
+    }
+
+    if (status === 401) {
+        return 'unauthorized'
+    }
+
+    if (status === 403) {
+        return 'sessionExpired'
+    }
+
+    if (status === 404) {
+        return 'notFound'
+    }
+
+    if (status === 422) {
+        return 'validationError'
+    }
+
+    if (status === 429) {
+        return 'tooManyRequests'
+    }
+
+    if (status >= 500) {
+        return 'serverError'
+    }
+
+    return 'default'
+}
+
+let onErrorCallback = null
+
+export const setErrorHandler = (callback) => {
+    onErrorCallback = callback
+}
+
 let refreshRequest = null
 
 apiClient.interceptors.response.use(
@@ -21,6 +73,11 @@ apiClient.interceptors.response.use(
         const originalRequest = error.config || {}
         const requestUrl = originalRequest?.url || ''
         const statusCode = error?.response?.status
+
+        if (onErrorCallback) {
+            const errorKey = getErrorKey(error)
+            onErrorCallback(errorKey, error)
+        }
 
         if (
             statusCode !== 401 ||

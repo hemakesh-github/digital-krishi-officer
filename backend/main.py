@@ -1,7 +1,6 @@
 from contextlib import asynccontextmanager
 from Utils.db_operations import get_suggestion
 from fastapi import FastAPI, Depends, Response, Cookie
-from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 from dotenv import load_dotenv
@@ -47,6 +46,9 @@ async def lifespan(app: FastAPI):
     init_db()
     # Load disease model on startup
     load_disease_model()
+    # Preload the retrieval embedding model to avoid delay on first request
+    from LLM.retrieval.get_model import get_model
+    get_model()
     yield
     print("App shutdown")
 
@@ -78,8 +80,6 @@ app.include_router(crop_advice.router, prefix="/crop_advice", tags=["crop_advice
 app.include_router(disease.router, prefix="/disease", tags=["disease"])
 app.include_router(transcription.router, prefix="/transcription", tags=["transcription"])
 
-app.mount("/disease_uploads", StaticFiles(directory="disease_uploads"), name="disease_uploads")
-
 @app.get("/")
 async def root():
     return {"message": "Welcome to Farmer Assist API"}
@@ -97,4 +97,4 @@ def retrieval(crop: str = None, disease: str = None, district: str = None):
 
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True, ssl_keyfile="./cert/key.pem", ssl_certfile="./cert/cert.pem")

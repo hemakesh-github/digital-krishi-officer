@@ -123,9 +123,7 @@ export default function History() {
     useEffect(() => {
         async function fetch() {
             try {
-                console.log(userId)
                 let response = await getHistory(userId);
-                console.log(response)
                 setCropItems([])
                 setDiseaseItems([])
                 response = response.map((item) => {
@@ -172,8 +170,6 @@ export default function History() {
         fetch();
     }, [userId]);
 
-    console.log("diseaseItems", diseaseItems)
-    console.log("cropItems", cropItems)
 
 
     return (

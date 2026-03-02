@@ -18,7 +18,7 @@ load_dotenv()
 APP_NAME = "crop_query_agent"
 
 
-def escalate(session, sessionId: str):
+def escalate(session, sessionId: str, language: str):
     """Escalates the conversation to a human agent when the model cannot answer.
 
     Args:
@@ -31,7 +31,8 @@ def escalate(session, sessionId: str):
         expert = addExpertRequest(session, sessionId)
         if expert:
             break
-    return {"exper_name": expert.name, "msg": f"Your query will be resolved by our officer {expert.name} shortly"}
+    msg = f"మీ ప్రశ్నను మా అధికారి {expert.name} త్వరలో పరిష్కరిస్తారు" if language == "te" else f"Your query will be resolved by our officer {expert.name} shortly"
+    return {"exper_name": expert.name, "msg": msg}
 
 class AdvisoryResponse(BaseModel):
     crop_name: str = Field(description="Name of the crop")
@@ -59,7 +60,10 @@ crop_query_agent = Agent(
             You can also perform search using search agent tool when you dont have enough information 
             to answer user query. You should try to answer user query with the information you have and only 
             You should only answer if given context is sufficient to construct an answer, if the context is not sufficient to answer user query then
-            you just escalate the query. """
+            you just escalate the query.
+            When you dont find suffiecient context and input is in telugu translate to english and pass to the tools (both for get_suggestion and retrieve_answer) 
+            You need to extract the crop name from the query and pass it to the get_suggestion tool and also give in the final response.
+            Your final answer should be in the language specified (telugu or english whichever is specified / the user query is)"""
     ),
     instruction=(
         """
@@ -71,6 +75,9 @@ crop_query_agent = Agent(
         - You can also perform retrieval when you dont have enough information to answer user query by passing a more detailed rewritten query.
         - You should try to answer user query with the information you have and only 
         - The get_suggestion tool takes crop name in english, so if the crop name is in local language, convert it to english before passing it to the tool.
+        - Pass english translated query to the tools (both for get_suggestion and retrieve_answer)
+        - You have to extract the crop name from the query and pass it to the get_suggestion tool and also give in the final response
+        - Your response should always be in the language of the query and language specified
         """
     ),
     tools=[get_suggestion, retrieve_answer],
@@ -79,7 +86,6 @@ crop_query_agent = Agent(
 
 
 async def query_agent(cropData, dbSession, userId, sessionId=None, role="farmer"):
-    print(cropData.location, cropData.query)
 
     def _build_query(cropData, retrieved_data=None, suggestions=None):
         query_parts = []
@@ -92,6 +98,8 @@ async def query_agent(cropData, dbSession, userId, sessionId=None, role="farmer"
             query_parts.append(f"This is retrieved Data if the data is in the context use it else discard this information: {retrieved_data}")
         if suggestions:
             query_parts.append(f"This is suggestions based on crop, disease and district if the suggestions are in the context use it else discard this information: {suggestions}")
+        if cropData.user_language:
+            query_parts.append("Respond in this Language: "+ ("telugu" if cropData.user_language == "te" else "english"))
         return " | ".join(query_parts)
 
 
@@ -108,11 +116,11 @@ async def query_agent(cropData, dbSession, userId, sessionId=None, role="farmer"
         dbSession.refresh(new_session)
         sessionId = new_session.id
         session = await session_service.create_session(app_name=APP_NAME, user_id=str(userId), session_id=str(sessionId))
-        new_user_message = Message(session_id= sessionId, role=role, content = message)
+        new_user_message = Message(session_id=sessionId, role=role, content=message)
 
     else:
         session = await session_service.get_session(app_name=APP_NAME, user_id=str(userId), session_id=str(sessionId))
-        new_user_message = Message(session_id= sessionId, role=role, content = cropData.query)
+        new_user_message = Message(session_id=sessionId, role=role, content=cropData.query)
     dbSession.add(new_user_message)
     dbSession.commit()
     dbSession.refresh(new_user_message)
@@ -125,16 +133,14 @@ async def query_agent(cropData, dbSession, userId, sessionId=None, role="farmer"
     events = runner.run_async(user_id=str(userId), session_id=str(sessionId), new_message=content)
     final_answer=""
     async for event in events:
-        print(f"\nDEBUG EVENT: {event}\n")
         if event.is_final_response() and event.content:
             if event.content and event.content.parts:
                 raw_json_string = event.content.parts[0].text.strip()
-                print(raw_json_string)
                 try:
                     parsed_output = AdvisoryResponse.model_validate_json(raw_json_string)
-                    print("\n🟢 FINAL STRUCTURED ANSWER")
-                    print(f"Crop: {parsed_output.crop_name}")
-                    print(f"Action: {parsed_output.recommended_action}")
+                    # print("\n🟢 FINAL STRUCTURED ANSWER")
+                    # print(f"Crop: {parsed_output.crop_name}")
+                    # print(f"Action: {parsed_output.recommended_action}")
                     final_answer = parsed_output.model_dump()
                 except Exception as e:
                     print(f"Failed to parse JSON output: {e}")
@@ -143,7 +149,7 @@ async def query_agent(cropData, dbSession, userId, sessionId=None, role="farmer"
     
     
     if (final_answer.get("needs_escalation")):
-        escalation_result = escalate(dbSession, sessionId)
+        escalation_result = escalate(dbSession, sessionId, cropData.user_language)
         new_agent_message = Message(session_id=sessionId, role="Agent", content=json.dumps(escalation_result))
     else:
         new_agent_message = Message(session_id=sessionId, role="Agent", content=json.dumps(final_answer))
@@ -152,7 +158,6 @@ async def query_agent(cropData, dbSession, userId, sessionId=None, role="farmer"
     dbSession.add(new_agent_message)
     dbSession.commit()
     dbSession.refresh(new_agent_message)
-    print(sessionId)
     return final_answer
     
 async def add_expert_reply(reply: MessageData):

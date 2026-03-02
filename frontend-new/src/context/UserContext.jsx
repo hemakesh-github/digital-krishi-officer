@@ -15,9 +15,7 @@ function UserContext({ children }) {
                 const response = await getUser();
 
                 if (response.success) {
-                    console.log(response);
                     const user = response.user;
-                    console.log(user)
                     setMobileNo(user.mobileNo);
                     setType(user.role);
                     setUserId(user.id);
@@ -30,7 +28,6 @@ function UserContext({ children }) {
         }
         fetchUser();
     }, [])
-    console.log(mobileNo, type, userId);
     return (
         <UserContextData.Provider value={{ mobileNo, setMobileNo, type, setType, userId, setUserId, loading }}>
             {children}

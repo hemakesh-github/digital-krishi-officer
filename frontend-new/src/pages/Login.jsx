@@ -87,9 +87,7 @@ const Login = () => {
                     setMobileNo(response.mobile_number)
                     setUserId(response.userId)
                     setType(response.userType)
-                    console.log(response)
                     navigate('/dashboard')
-                    console.log('OTP verified successfully')
                 } else {
                     setError(t('login.invalidOtpError'))
                     return

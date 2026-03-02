@@ -26,6 +26,5 @@ async def continue_crop_advice_chat(sessionId, query: dict, session=Depends(get_
     cropData = get_crop_data_from_chat_sessions(session, sessionId)
     cropData = CropData(**cropData)
     cropData.query = query["query"]
-    print(cropData, sessionId)
     x = await query_agent(cropData, dbSession=session, sessionId = sessionId, userId=user.id)
     return x

@@ -1,11 +1,9 @@
-import os
-import uuid
-import shutil
-from pathlib import Path
+from io import BytesIO
 from PIL import Image
 from database import get_session
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from Utils.db_operations import addDiseaseDetection, getDiseaseDetectionHistory, getDiseaseDetectionById
+from Utils.cloud_storage import validate_image_filename, upload_image_bytes
 from Utils.dependencies import verify_token
 
 router = APIRouter()
@@ -14,31 +12,6 @@ router = APIRouter()
 def get_disease_predictor():
     from main import get_disease_predictor
     return get_disease_predictor()
-
-# Upload folder for disease images
-UPLOAD_FOLDER = "disease_uploads"
-
-
-def save_image(upload_file: UploadFile) -> str:
-    """Save uploaded image to disk and return the path"""
-    if not os.path.exists(UPLOAD_FOLDER):
-        os.makedirs(UPLOAD_FOLDER)
-    
-    file_ext = os.path.splitext(upload_file.filename)[1].lower()
-    if file_ext not in ['.jpg', '.jpeg', '.png', '.webp']:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid image format. Supported: jpg, jpeg, png, webp"
-        )
-    
-    unique_filename = f"{uuid.uuid4()}{file_ext}"
-    file_path = os.path.join(UPLOAD_FOLDER, unique_filename)
-    
-    with open(file_path, "wb") as buffer:
-        shutil.copyfileobj(upload_file.file, buffer)
-    
-    return Path(file_path).as_posix()
-
 
 @router.post("/detect")
 async def detect_disease(
@@ -55,8 +28,15 @@ async def detect_disease(
                 detail="Invalid file type. Please upload an image"
             )
         
-        # Save image to disk
-        image_path = save_image(image)
+        file_ext = validate_image_filename(image.filename)
+        image_bytes = await image.read()
+        if not image_bytes:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Uploaded image is empty"
+            )
+
+        image_url, object_name = upload_image_bytes(image_bytes, file_ext)
         
         # Get disease predictor
         predictor = get_disease_predictor()
@@ -69,7 +49,7 @@ async def detect_disease(
         
         # Open and process image
         try:
-            img = Image.open(image_path)
+            img = Image.open(BytesIO(image_bytes))
             if img.mode != 'RGB':
                 img = img.convert('RGB')
         except Exception as e:
@@ -87,19 +67,19 @@ async def detect_disease(
             "confidence": confidence
         }
         
-        saved = addDiseaseDetection(session, user.id, result, image_path)
+        saved = addDiseaseDetection(session, user.id, result, image_url)
         
         if not saved:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Failed to save detection result"
             )
-        print(disease)
         return {
             "success": True,
             "disease": disease.replace("___", " ").capitalize(),
             "confidence": f"{confidence}%",
-            "image_path": image_path,
+            "image_path": image_url,
+            "image_object": object_name,
             "sessionId": saved
         }        
     except HTTPException:
