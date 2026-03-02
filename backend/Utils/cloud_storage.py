@@ -44,7 +44,7 @@ def upload_image_bytes(image_bytes: bytes, file_ext: str) -> Tuple[str, str]:
             detail="GCS bucket is not configured. Set GCS_BUCKET_NAME.",
         )
 
-    bucket_folder = os.getenv("GCS_BUCKET_FOLDER", "disease_uploads").strip("/")
+    bucket_folder = os.getenv("GCS_BUCKET_FOLDER_DISEASE", "disease_uploads").strip("/")
     unique_filename = f"{uuid.uuid4()}{file_ext}"
     object_name = f"{bucket_folder}/{unique_filename}" if bucket_folder else unique_filename
 
