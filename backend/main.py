@@ -9,7 +9,7 @@ from database import get_session, init_db
 from fastapi.security import HTTPBearer
 from routers import users, admin, expert, chats, auth, location, weather, crop_advice, disease, transcription
 from Utils.dependencies import verify_token, verify_admin, verify_expert
-
+import os
 load_dotenv()
 
 security = HTTPBearer()
