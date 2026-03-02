@@ -10,7 +10,7 @@ class DiseasePrediction:
 
     def __init__(self):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
+        print(self.device)
         bucket_name = os.getenv("GCS_BUCKET_NAME")
         blob_path =  os.getenv("GCS_BUCKET_FOLDER_MODEL")+"/disease/best_model.pth"
         local_path = "/tmp/best_model.pth"
@@ -18,9 +18,13 @@ class DiseasePrediction:
         # Download from GCS if not already in /tmp
         if not os.path.exists(local_path):
             client = storage.Client()
+            print(client)
             bucket = client.bucket(bucket_name)
+            print(bucket)
             blob = bucket.blob(blob_path)
+            print(blob)
             blob.download_to_filename(local_path)
+            
 
         print(f"Loading model from: {local_path}")
 

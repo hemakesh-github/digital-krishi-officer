@@ -50,8 +50,8 @@ def get_suggestion(crop, district=None, disease=None):
     Returns:
         list: A list of dictionaries containing district, crop, stage, and advice.
     """
-    
-    crop = crop.strip().lower()
+    if crop:
+        crop = crop.strip().lower()
 
     with Session(engine) as session:
         if district == None and disease == None:
@@ -80,7 +80,7 @@ def get_suggestion(crop, district=None, disease=None):
             )
             crop_advice = session.execute(stmt).mappings().all()
             if crop_advice==[]:
-                return get_suggestion(session, crop)
+                return get_suggestion(crop)
             return [dict(row) for row in crop_advice]
 
         elif district==None and disease!=None:
@@ -96,7 +96,7 @@ def get_suggestion(crop, district=None, disease=None):
             )
             crop_advice = session.execute(stmt).mappings().all()
             if crop_advice==[]:
-                return get_suggestion(session, crop)
+                return get_suggestion(crop)
             return [dict(row) for row in crop_advice]
         else:
             disease = disease.strip().lower()
@@ -114,7 +114,7 @@ def get_suggestion(crop, district=None, disease=None):
             )
             crop_advice = session.execute(stmt).mappings().all()
             if crop_advice==[]:
-                return get_suggestion(session, crop, district) + get_suggestion(session, crop, disease=disease)
+                return get_suggestion(crop, district) + get_suggestion(crop, disease=disease)
             return [dict(row) for row in crop_advice]
 
 

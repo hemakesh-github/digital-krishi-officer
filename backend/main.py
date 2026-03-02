@@ -25,18 +25,16 @@ def get_disease_predictor():
 
 def load_disease_model():
     global disease_predictor
-    import os
     from diseasePrediction.disease_model import DiseasePrediction
     
-    path = os.path.join(os.path.dirname(__file__), "diseasePrediction", "best_model.pth")
     
-    if os.path.exists(path):
-        try:
-            disease_predictor = DiseasePrediction(model_path=path)
-            print(f"Disease model loaded from: {path}")
-            return True
-        except Exception as e:
-            print(f"Error loading model from {path}: {e}")
+   
+    try:
+        disease_predictor = DiseasePrediction()
+        print(f"disease model loaded successfully on {disease_predictor.device}")
+        return True
+    except Exception as e:
+        print(f"Error loading model")
     print("Warning: Disease model not found at startup")
     return False
 
@@ -90,10 +88,11 @@ async def health_check():
     
 
 
-@app.post("/retrieval")
-def retrieval(crop: str = None, disease: str = None, district: str = None):
-    return get_suggestion(crop=crop, disease=disease, district=None)
-    # return retrieve_answer(query)
+# @app.post("/retrieval")
+# def retrieval(crop: str = None, disease: str = None, district: str = None):
+#     from LLM.retrieval import retrieve_answer
+#     get_suggestion(crop=crop, disease=disease, district=None)
+#     return retrieve_answer("borrer attack")
 
 
 if __name__ == "__main__":
