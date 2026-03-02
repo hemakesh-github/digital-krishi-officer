@@ -48,6 +48,7 @@ async def lifespan(app: FastAPI):
     # Preload the retrieval embedding model to avoid delay on first request
     from LLM.retrieval.get_model import get_model
     get_model()
+    print("Application startup complete")
     yield
     print("App shutdown")
 

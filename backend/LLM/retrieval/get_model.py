@@ -6,7 +6,7 @@ _model = None
 
 BUCKET_NAME = os.getenv("GCS_BUCKET_NAME") 
 BUCKET_MODEL_PATH = os.getenv("GCS_BUCKET_FOLDER_MODEL")+"/embeddings"
-LOCAL_MODEL_PATH = "/tmp/embeddings"
+LOCAL_MODEL_PATH = "/tmp/embeddings"  # Local path to store the model temporarily
 MODEL_NAME = "paraphrase-multilingual-MiniLM-L12-v2"
 
 
@@ -16,6 +16,7 @@ def _download_folder_from_bucket(bucket_path, local_folder):
 
     blobs = bucket.list_blobs(prefix=bucket_path)
     for blob in blobs:
+        print(f"Downloading {blob.name} to {local_folder}...")
         relative_path = blob.name[len(bucket_path) + 1:]
         local_file = os.path.join(local_folder, relative_path)
         os.makedirs(os.path.dirname(local_file), exist_ok=True)
@@ -50,7 +51,7 @@ def get_model():
 
     client = storage.Client()
     bucket = client.bucket(BUCKET_NAME)
-
+    print(client, bucket)
     blobs = list(bucket.list_blobs(prefix=BUCKET_MODEL_PATH))
 
     if blobs:
