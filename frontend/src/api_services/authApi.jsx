@@ -1,12 +1,8 @@
 import { apiClient, withAuthHeader, setWasLoggedIn } from './client'
 
-export const genOtp = async (mobileNo, userType) => {
-    const formData = new FormData()
-    formData.append('mobileNo', mobileNo)
-    formData.append('userType', userType)
-
+export const genOtp = async (email, userType) => {
     try {
-        const response = await apiClient.post('auth/genOTP', formData, {
+        const response = await apiClient.post('auth/genOTP', { email, userType }, {
             headers: { 'Content-Type': 'application/json' },
         })
         return response.data
@@ -16,14 +12,9 @@ export const genOtp = async (mobileNo, userType) => {
     }
 }
 
-export const verifyOtp = async (mobileNo, otp, userType) => {
-    const formData = new FormData()
-    formData.append('mobileNo', mobileNo)
-    formData.append('otp', otp)
-    formData.append('userType', userType)
-
+export const verifyOtp = async (email, otp, userType) => {
     try {
-        const response = await apiClient.post('auth/verifyOTP', formData, {
+        const response = await apiClient.post('auth/verifyOTP', { email, otp, userType }, {
             headers: { 'Content-Type': 'application/json' },
         })
         if (response.data?.success) {

@@ -87,6 +87,7 @@ crop_query_agent = Agent(
         - Pass english translated query to the tools (both for get_suggestion and retrieve_answer)
         - You have to extract the crop name from the query and pass it to the get_suggestion tool and also give in the final response
         - Your response should always be in the language of the query and language specified
+        - Always give crop name in the final response, if you are not able to find crop name from the query then give empty string as crop name in the final response
         """
     ),
     tools=[get_suggestion, retrieve_answer],

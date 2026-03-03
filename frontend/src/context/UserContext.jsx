@@ -4,7 +4,7 @@ import { getUser } from '../api_services/api_services'
 export const UserContextData = createContext();
 
 function UserContext({ children }) {
-    const [mobileNo, setMobileNo] = useState(null);
+    const [email, setEmail] = useState(null);
     const [type, setType] = useState(null);
     const [userId, setUserId] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -16,7 +16,7 @@ function UserContext({ children }) {
 
                 if (response.success) {
                     const user = response.user;
-                    setMobileNo(user.mobileNo);
+                    setEmail(user.email);
                     setType(user.role);
                     setUserId(user.id);
                 }
@@ -29,7 +29,7 @@ function UserContext({ children }) {
         fetchUser();
     }, [])
     return (
-        <UserContextData.Provider value={{ mobileNo, setMobileNo, type, setType, userId, setUserId, loading }}>
+        <UserContextData.Provider value={{ email, setEmail, type, setType, userId, setUserId, loading }}>
             {children}
         </UserContextData.Provider>
     )

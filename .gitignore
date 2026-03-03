@@ -43,7 +43,6 @@ frontend/build/
 frontend-new/build/
 
 # Cache from Data Processing
-backend/data_gen/__pycache__/
 n o d e _ m o d u l e s / 
  
  p a c k a g e - l o c k . j s o n 
@@ -62,6 +61,7 @@ backend/embeddings/
 
 
 __pycache__/
+*/__pycache__/*
 *.py[cod]
 *.class
 

@@ -199,8 +199,7 @@ export default function DiseasePrediction() {
                                         <h2 className="text-xl font-extrabold text-foreground leading-tight">{t(`diseases.${result.disease}`, result.disease)}</h2>
                                     </div>
                                     <span className="text-sm font-bold px-3 py-1.5 rounded-full bg-muted text-foreground border border-border">
-                                        {result.confidence}% {t('dashboard.disease.match')}
-                                    </span>
+                                        {result.confidence}% {t('dashboard.disease.match')}                                  </span>
                                 </div>
 
                                 {/* Confidence bar */}

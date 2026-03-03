@@ -9,11 +9,11 @@ import uuid
 Base = declarative_base()
 
 class UserOTPReq(BaseModel):
-    mobileNo: str
+    email: str
     userType: Optional[str] = None
 
 class UserReq(BaseModel):
-    mobileNo: str 
+    email: str
     otp: Optional[str] = None
     userType: Optional[str] = None
 
@@ -24,7 +24,7 @@ class CropData(BaseModel):
     user_language: Optional[str] = None
 
 class ExpertData(BaseModel):
-    mobileNo: str
+    email: str
     name: str
 
 
@@ -44,7 +44,7 @@ class User(Base):
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, index=True)
-    mobileNo = Column(String(13), unique=True, index=True, nullable=False)
+    email = Column(String(255), unique=True, index=True, nullable=False)
     created_at = Column(TIMESTAMP, server_default=text("CURRENT_TIMESTAMP"))
     role = Column(String(10), server_default="farmer")
 
@@ -61,7 +61,7 @@ class ChatSession(Base):
     cropdata = Column(JSONB, nullable=True)
     user_id = Column(BigInteger, nullable=False, index=True)
     # Denormalized field for faster dashboard queries (avoids JOIN with users table)
-    farmer_mobile = Column(String(13), nullable=True, index=True)
+    farmer_email = Column(String(255), nullable=True, index=True)
     created_at = Column(TIMESTAMP, server_default=text("CURRENT_TIMESTAMP"))
     messages = relationship("Message", back_populates="session", cascade="all, delete-orphan")
     escalated = Column(Boolean, default=False)
@@ -88,7 +88,7 @@ class OTPCode(Base):
     __tablename__ = "otp_codes"
 
     id = Column(Integer, primary_key=True, index=True)
-    mobileNo = Column(String(13), nullable=False)
+    email = Column(String(255), nullable=False)
     otp_hash = Column(Text, nullable=False)
     expires_at = Column(TIMESTAMP, nullable=False, server_default=text("CURRENT_TIMESTAMP + INTERVAL '15 minutes'"))
     is_used = Column(Boolean, default=False)

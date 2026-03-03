@@ -202,17 +202,17 @@ export default function Navbar() {
     const [mobileOpen, setMobileOpen] = useState(false)
     const [languageModalOpen, setLanguageModalOpen] = useState(false)
     const { t, i18n } = useTranslation()
-    const { type, mobileNo, setType, setMobileNo, setUserId } = useContext(UserContextData)
+    const { type, email, setType, setEmail, setUserId } = useContext(UserContextData)
 
     const handleLogout = async () => {
         await logout()
         setType(null)
-        setMobileNo(null)
+        setEmail(null)
         setUserId(null)
         setMobileOpen(false)
     }
 
-    const isLoggedIn = Boolean(type || mobileNo)
+    const isLoggedIn = Boolean(type || email)
 
 
     const navItems = type

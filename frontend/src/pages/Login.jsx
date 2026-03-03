@@ -13,18 +13,20 @@ const Login = () => {
     const { t, i18n } = useTranslation()
     const userTypes = ['Farmer', 'Expert', 'Admin']
     const [userType, setUserType] = useState(userTypes[0])
-    const [mobileNumber, setMobileNumber] = useState('')
+    const [email, setEmail] = useState('')
     const [otp, setOtp] = useState('')
     const [state, setState] = useState(0)
     const [error, setError] = useState('')
     const [resendTimer, setResendTimer] = useState(0)
-    const { mobileNo, setMobileNo, type, setType, setUserId } = useContext(UserContextData);
+    const [submitLoading, setSubmitLoading] = useState(false)
+    const [resendLoading, setResendLoading] = useState(false)
+    const { email: loggedEmail, setEmail: setLoggedEmail, type, setType, setUserId } = useContext(UserContextData);
     const navigate = useNavigate();
 
     useEffect(() => {
-        if (!mobileNo) return
+        if (!loggedEmail) return
         navigate('/dashboard', { replace: true })
-    }, [mobileNo, navigate])
+    }, [loggedEmail, navigate])
 
     useEffect(() => {
         if (resendTimer > 0) {
@@ -39,10 +41,13 @@ const Login = () => {
         setState(1)
     }
 
+    const validateEmail = (val) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)
+
     const handleResendOtp = async () => {
-        if (resendTimer > 0) return
+        if (resendTimer > 0 || resendLoading) return
+        setResendLoading(true)
         try {
-            const response = await genOtp(mobileNumber, userType)
+            const response = await genOtp(email, userType)
             if (response && response.success) {
                 setResendTimer(30)
                 setError('')
@@ -51,50 +56,54 @@ const Login = () => {
             }
         } catch {
             setError(t('login.failedOtp'))
+        } finally {
+            setResendLoading(false)
         }
     }
 
     const handleSubmit = async () => {
+        if (submitLoading) return
         if (state === 1) {
-            if (!/^\d{10}$/.test(mobileNumber)) {
-                setError(t('login.invalidMobile'))
+            if (!validateEmail(email)) {
+                setError(t('login.invalidEmail') || 'Please enter a valid email address')
                 return
             }
+            setSubmitLoading(true)
             try {
-                const response = await genOtp(mobileNumber, userType)
+                const response = await genOtp(email, userType)
                 if (response && response.success) {
-                    console.log('OTP generated successfully')
+                    console.log('OTP sent to email')
+                    setError('')
+                    setState(2)
+                    setResendTimer(30)
                 } else {
                     setError(t('login.failedOtp'))
-                    return
                 }
             } catch {
                 setError(t('login.failedOtp'))
-                console.error(err)
-                return
+            } finally {
+                setSubmitLoading(false)
             }
-            setError('')
-            setState(2)
-            setResendTimer(30)
         } else {
             if (!/^\d{6}$/.test(otp)) {
                 setError(t('login.invalidOtp'))
                 return
             }
+            setSubmitLoading(true)
             try {
-                const response = await verifyOtp(mobileNumber, otp, userType)
+                const response = await verifyOtp(email, otp, userType)
                 if (response && response.success) {
-                    setMobileNo(response.mobile_number)
+                    setLoggedEmail(response.email)
                     setUserId(response.userId)
                     setType(response.userType)
                     navigate('/dashboard')
                 } else {
                     setError(t('login.invalidOtpError'))
-                    return
                 }
             } catch {
                 setError(t('login.failedVerify'))
-                return
+            } finally {
+                setSubmitLoading(false)
             }
         }
     }
@@ -168,15 +177,17 @@ const Login = () => {
                                 <>
                                     <div className="text-xl font-bold text-gray-800">{t('login.loginAs')} {userType === 'Farmer' ? t('login.farmer') : userType === 'Expert' ? t('login.expert') : t('login.admin')}</div>
                                     <div className="flex flex-col gap-1.5">
-                                        <label className="text-sm font-medium text-green-900">{t('login.mobileNumber')}</label>
+                                        <label className="text-sm font-medium text-green-900">
+                                            {t('login.emailAddress') || 'Email Address'}
+                                        </label>
                                         <input
                                             required
-                                            type="tel"
-                                            inputMode="numeric"
-                                            maxLength={10}
-                                            placeholder={t('login.enterMobile')}
+                                            type="email"
+                                            inputMode="email"
+                                            placeholder={t('login.enterEmail') || 'Enter your email address'}
                                             className="w-full px-3 py-2.5 rounded-xl bg-green-50/50 border border-green-100 focus:border-green-500 focus:ring-2 focus:ring-green-200 outline-none transition-all placeholder:text-gray-400 text-gray-800 font-medium text-sm"
-                                            onChange={e => setMobileNumber(e.target.value)}
+                                            value={email}
+                                            onChange={e => setEmail(e.target.value)}
                                             onKeyDown={e => e.key === 'Enter' && handleSubmit()}
                                         />
                                         {error && <div className="text-red-600 text-sm">{error}</div>}
@@ -185,7 +196,7 @@ const Login = () => {
                             ) : (
                                 <>
                                     <div className="text-sm text-gray-600">
-                                        {t('login.otpSent')} <span className="font-bold text-gray-800">{mobileNumber}</span>
+                                        {t('login.otpSent') || 'OTP sent to'} <span className="font-bold text-gray-800">{email}</span>
                                     </div>
                                     <div className="flex flex-col gap-1.5">
                                         <label className="text-sm font-medium text-green-900">OTP</label>
@@ -202,22 +213,30 @@ const Login = () => {
                                             />
                                             <button
                                                 onClick={handleResendOtp}
-                                                disabled={resendTimer > 0}
-                                                className={`px-3 py-2.5 font-semibold rounded-xl transition whitespace-nowrap shadow-sm cursor-pointer border-none text-sm ${resendTimer > 0
+                                                disabled={resendTimer > 0 || resendLoading}
+                                                className={`px-3 py-2.5 font-semibold rounded-xl transition whitespace-nowrap shadow-sm cursor-pointer border-none text-sm flex items-center justify-center gap-2 ${resendTimer > 0 || resendLoading
                                                     ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                                                     : 'bg-green-100 text-green-700 hover:bg-green-200'
                                                     }`}
                                             >
-                                                {resendTimer > 0 ? `${resendTimer}s` : t('login.resend')}
+                                                {resendLoading ? (
+                                                    <>
+                                                        <svg className="animate-spin w-3 h-3" viewBox="0 0 24 24" fill="none">
+                                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                                                        </svg>
+                                                        {t('login.resend')}
+                                                    </>
+                                                ) : resendTimer > 0 ? `${resendTimer}s` : t('login.resend')}
                                             </button>
                                         </div>
                                         {error && <div className="text-red-600 text-sm">{error}</div>}
                                     </div>
                                     <div className="text-sm text-green-700 cursor-pointer">
-                                        {t('login.wrongNumber')}{' '}
+                                        {t('login.wrongNumber') || 'Wrong email?'}{' '}
                                         <span
                                             className="underline text-blue-700 font-medium"
-                                            onClick={() => { setMobileNumber(''); setState(1); setError('') }}
+                                            onClick={() => { setEmail(''); setState(1); setError('') }}
                                         >
                                             {t('login.updateIt')}
                                         </span>
@@ -227,9 +246,22 @@ const Login = () => {
 
                             <button
                                 onClick={handleSubmit}
-                                className="w-full py-3 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl shadow-md hover:shadow-green-900/20 active:scale-95 transition-all duration-200 cursor-pointer border-none text-sm"
+                                disabled={submitLoading}
+                                className={`w-full py-3 font-bold rounded-xl shadow-md transition-all duration-200 border-none text-sm flex items-center justify-center gap-2 ${
+                                    submitLoading
+                                        ? 'bg-green-400 text-white cursor-not-allowed'
+                                        : 'bg-green-600 hover:bg-green-700 text-white cursor-pointer active:scale-95 hover:shadow-green-900/20'
+                                }`}
                             >
-                                {state === 1 ? t('login.sendOtp') : t('login.verifyOtp')}
+                                {submitLoading ? (
+                                    <>
+                                        <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                                        </svg>
+                                        {state === 1 ? t('login.sendOtp') : t('login.verifyOtp')}
+                                    </>
+                                ) : state === 1 ? t('login.sendOtp') : t('login.verifyOtp')}
                             </button>
                         </div>
                     </>
