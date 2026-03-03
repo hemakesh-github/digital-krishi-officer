@@ -28,9 +28,6 @@ def get_disease_predictor():
 def load_disease_model():
     global disease_predictor
     from diseasePrediction.disease_model import DiseasePrediction
-    
-    
-   
     try:
         disease_predictor = DiseasePrediction()
         print(f"disease model loaded successfully on {disease_predictor.device}")
@@ -107,6 +104,7 @@ async def load_locations_from_csv(session = Depends(get_session)):
 #     get_suggestion(crop=crop, disease=disease, district=None)
 #     return retrieve_answer("borrer attack")
 
-
+# ✅ Fixed - reads PORT from environment
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True, ssl_keyfile="./cert/key.pem", ssl_certfile="./cert/cert.pem")
+    port = int(os.getenv("PORT", 8080))
+    uvicorn.run("main:app", host="0.0.0.0", port=port)
