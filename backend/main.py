@@ -42,10 +42,6 @@ def load_disease_model():
 async def lifespan(app: FastAPI):
     init_db()
     # Load disease model on startup
-    load_disease_model()
-    # Preload the retrieval embedding model to avoid delay on first request
-    from LLM.retrieval.get_model import get_model
-    get_model()
     print("Application startup complete")
     yield
     print("App shutdown")
@@ -85,6 +81,13 @@ async def root():
 @app.get("/health")
 async def health_check():
     return {"status": "healthy"}
+
+@app.get("/load_model")
+def load_model():
+    load_disease_model()
+    # Preload the retrieval embedding model to avoid delay on first request
+    from LLM.retrieval.get_model import get_model
+    get_model()
 
 
 @app.post("/temp/load-data-to-db")
