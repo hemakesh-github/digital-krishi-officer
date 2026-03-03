@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 from dotenv import load_dotenv
 from Auth.auth import JWTOperations
+from data_gen.weekly_sug_extract import extract_and_load_weekly_advice, load_locations
 from database import get_session, init_db
 from fastapi.security import HTTPBearer
 from routers import users, admin, expert, chats, auth, location, weather, crop_advice, disease, transcription
@@ -87,6 +88,16 @@ async def root():
 @app.get("/health")
 async def health_check():
     return {"status": "healthy"}
+
+
+@app.post("/temp/load-data-to-db")
+async def load_locations_from_csv(session = Depends(get_session)):
+    """
+    Temporary endpoint to load location data from CSV file into database.
+    This will insert all locations from data_gen/locations.csv into the locations table.
+    """
+    return {**load_locations(session), **extract_and_load_weekly_advice(session)}
+
     
 
 

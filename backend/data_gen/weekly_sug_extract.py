@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from models import CropAdvice
 
 
-def extract_and_load_weekly_advice(session: Session, json_file_path: str):
+def extract_and_load_weekly_advice(session: Session, json_file_path: str = "data_gen\\weekly_advice_example.json"):
     """
     Reads weekly advice data from a JSON file and inserts it into the database 
     using the provided SQLAlchemy session.
@@ -56,7 +56,7 @@ def extract_and_load_weekly_advice(session: Session, json_file_path: str):
 
         session.commit()
         msg = f"Successfully processed {len(data)} entries. Added {count} new records."
-        return msg
+        return {"msg":msg}
 
     except json.JSONDecodeError as e:
         print(f"Error decoding JSON: {e}")
@@ -65,4 +65,56 @@ def extract_and_load_weekly_advice(session: Session, json_file_path: str):
         import traceback
         traceback.print_exc()
         session.rollback()
+
+
+def load_locations(session: Session, csv_file_path: str = "data_gen\\locations.csv"):
+    import csv
+    from models import Locations
+    from sqlalchemy.dialects.postgresql import insert
+    
+    
+    
+    try:
+        inserted_count = 0
+        skipped_count = 0
+        
+        with open(csv_file_path, 'r', encoding='utf-8') as file:
+            csv_reader = csv.DictReader(file)
+            
+            for row in csv_reader:
+                # Create location object
+                location_data = {
+                    'city': row['city'].strip(),
+                    'pincode': row['pincode'].strip(),
+                    'district': row['district'].strip(),
+                    'state': row['state'].strip(),
+                    'country': row['country'].strip()
+                }
+                
+                # Use PostgreSQL's INSERT ... ON CONFLICT DO NOTHING
+                stmt = insert(Locations).values(**location_data)
+                stmt = stmt.on_conflict_do_nothing()
+                
+                result = session.exec(stmt)
+                
+                if result.rowcount > 0:
+                    inserted_count += 1
+                else:
+                    skipped_count += 1
+            
+            session.commit()
+        
+        return {
+            "status": "success",
+            "message": f"Loaded locations from CSV",
+            "inserted": inserted_count,
+            "skipped": skipped_count,
+            "total_rows": inserted_count + skipped_count
+        }
+        
+    except FileNotFoundError:
+        return {"status": "error", "message": f"CSV file not found at {csv_file_path}"}
+    except Exception as e:
+        session.rollback()
+        return {"status": "error", "message": str(e)}
 

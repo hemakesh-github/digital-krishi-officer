@@ -1,6 +1,10 @@
 # Ignore old folder
 old/
 
+# SSH Keys
+y
+y.pub
+
 node_modules/
 dist/
 .env
