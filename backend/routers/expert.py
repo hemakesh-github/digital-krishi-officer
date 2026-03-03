@@ -47,8 +47,8 @@ def expertAdvice(MessageData: MessageData, session=Depends(get_session)):
                     chat_url = f"http://localhost:5173/chat?session={MessageData.sessionId}"
                     user_lang = chat_session.cropdata.get('user_language', 'en') if chat_session.cropdata else 'en'
                     msg = f"An expert has replied to your query on Digital Krishi Officer. View details here: {chat_url}" if user_lang == "en" else f"డిజిటల్ కృషి ఆఫీసర్ లో మీ ప్రశ్నకు నిపుణులు సమాధానం ఇచ్చారు. వివరాలను ఇక్కడ చూడండి: {chat_url}"
-                    # twillio_client.send_sms(to_number, msg)
-                    print(msg)
+                    twillio_client.send_sms(to_number, msg)
+                    # print(msg)
                     
                     from models import Notification
                     new_notif = Notification(
