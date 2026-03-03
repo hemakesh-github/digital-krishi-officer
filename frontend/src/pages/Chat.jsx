@@ -15,7 +15,7 @@ function renderMessage(text) {
         <div >
             <div>
                 {Object.entries(text).map(([key, value]) => (
-                    ["query", "disease_identified", "recommended_action",].includes(key) ? (
+                    ["crop_name", "query", "disease_identified", "recommended_action",].includes(key) ? (
                         <>
                             <div
                                 key={key + "-label"}
@@ -328,9 +328,9 @@ export default function Chat() {
 
 
 
-                    {/* Context pills — hidden on xs */}
+                    {/* Crop name pill */}
                     {cropName && (
-                        <div className="hidden sm:flex gap-1.5 ml-1">
+                        <div className="flex gap-1.5 ml-1">
                             <span className="text-[11px] bg-green-50 text-green-700 border border-green-100 px-2.5 py-0.5 rounded-full font-semibold">🌾 {cropName}</span>
                         </div>
                     )}

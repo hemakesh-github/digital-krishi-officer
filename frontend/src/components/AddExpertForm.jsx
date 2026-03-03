@@ -16,12 +16,12 @@ const C = {
 // ── Add Expert Form ───────────────────────────────────────────────────────
 export default function AddExpertForm({ onAdded }) {
     const [name, setName] = useState("");
-    const [mobile, setMobile] = useState("");
+    const [email, setEmail] = useState("");
     const [status, setStatus] = useState(null);
     const [errMsg, setErrMsg] = useState("");
     const [loading, setLoading] = useState(false);
     const [focusName, setFocusName] = useState(false);
-    const [focusMobile, setFocusMobile] = useState(false);
+    const [focusEmail, setFocusEmail] = useState(false);
 
     const inputStyle = focused => ({
         width: "100%", padding: "10px 14px",
@@ -33,15 +33,17 @@ export default function AddExpertForm({ onAdded }) {
         background: "#fafcfa",
     });
 
+    const validateEmail = (val) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val);
+
     const handleAdd = async () => {
         setStatus(null);
-        if (!name.trim() || !mobile.trim()) { setErrMsg("Please fill in both fields."); setStatus("error"); return; }
-        if (!/^\d{10}$/.test(mobile)) { setErrMsg("Enter a valid 10-digit mobile number."); setStatus("error"); return; }
+        if (!name.trim() || !email.trim()) { setErrMsg("Please fill in both fields."); setStatus("error"); return; }
+        if (!validateEmail(email)) { setErrMsg("Enter a valid email address."); setStatus("error"); return; }
         setLoading(true);
         try {
-            const result = await addExpert({ name: name.trim(), mobileNo: mobile.trim() });
+            const result = await addExpert({ name: name.trim(), email: email.trim() });
             if (result.success) {
-                setStatus("success"); setName(""); setMobile("");
+                setStatus("success"); setName(""); setEmail("");
                 setTimeout(() => { setStatus(null); onAdded?.(); }, 2000);
             } else { setErrMsg(result.message || "Failed to add expert."); setStatus("error"); }
         } catch (err) {
@@ -58,8 +60,16 @@ export default function AddExpertForm({ onAdded }) {
                 <input style={inputStyle(focusName)} value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Dr. Rajan Kumar" onFocus={() => setFocusName(true)} onBlur={() => setFocusName(false)} />
             </div>
             <div>
-                <label style={{ display: "block", fontSize: 10.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#7a9a7c", marginBottom: 5 }}>Mobile Number</label>
-                <input style={inputStyle(focusMobile)} value={mobile} onChange={e => setMobile(e.target.value.replace(/\D/g, ""))} placeholder="10-digit mobile number" maxLength={10} onFocus={() => setFocusMobile(true)} onBlur={() => setFocusMobile(false)} />
+                <label style={{ display: "block", fontSize: 10.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#7a9a7c", marginBottom: 5 }}>Email Address</label>
+                <input
+                    type="email"
+                    style={inputStyle(focusEmail)}
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    placeholder="expert@example.com"
+                    onFocus={() => setFocusEmail(true)}
+                    onBlur={() => setFocusEmail(false)}
+                />
             </div>
             <button
                 onClick={handleAdd} disabled={loading}

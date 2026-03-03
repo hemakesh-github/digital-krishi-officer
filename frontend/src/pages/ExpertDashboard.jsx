@@ -13,9 +13,12 @@ function timeAgo(iso) {
     return new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: '2-digit' })
 }
 
-function maskMobile(no) {
-    const s = String(no || '')
-    return s.length >= 4 ? `+91 ****${s.slice(-4)}` : (s || '—')
+function maskEmail(email) {
+    const s = String(email || '')
+    if (!s) return '—'
+    const [local, domain] = s.split('@')
+    if (!domain) return s
+    return `${local.slice(0, 2)}***@${domain}`
 }
 
 function cropEmoji(crop) {
@@ -185,7 +188,7 @@ function PendingList({ queries, onOpen, t }) {
                             <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 mb-1">
                                     <span className="font-bold text-gray-900 capitalize">{t('dashboard.expert.farmerQuery')}</span>
-                                    <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded font-mono">{maskMobile(q.farmer_mobile)}</span>
+                                    <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded font-mono">{maskEmail(q.farmer_email)}</span>
                                 </div>
                                 <div className="text-sm text-gray-600 mb-2 line-clamp-1">{cd.query || '—'}</div>
                                 <div className="flex items-center gap-2 flex-wrap">
@@ -241,7 +244,7 @@ function AnsweredList({ queries, onOpen, t }) {
                             <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 mb-1">
                                     <span className="font-bold text-gray-900 capitalize">{t('dashboard.expert.farmerQuery')}</span>
-                                    <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded font-mono">{maskMobile(q.farmer_mobile)}</span>
+                                    <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded font-mono">{maskEmail(q.farmer_email)}</span>
                                 </div>
                                 <div className="text-sm text-gray-600 mb-2 line-clamp-1">{cd.query || '—'}</div>
                                 <div className="flex items-center gap-2 flex-wrap">
