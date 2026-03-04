@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { getExpertDashboard } from '../api_services/api_services'
 import { useTranslation } from 'react-i18next'
+import { toISTDate } from '../utils/dateUtils'
 
 // ── Helpers ──────────────────────────────────────────────────────────────
 function timeAgo(iso) {
@@ -10,7 +11,7 @@ function timeAgo(iso) {
     if (h < 1) return `${Math.round(h * 60)}m ago`
     if (h < 24) return `${Math.round(h)}h ago`
     if (h < 48) return 'Yesterday'
-    return new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: '2-digit' })
+    return toISTDate(iso)
 }
 
 function maskEmail(email) {

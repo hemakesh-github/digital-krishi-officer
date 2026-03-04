@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import LocationSelector from './LocationSelector'
 import { getWeather } from '../api_services/api_services'
+import { toISTWeekday } from '../utils/dateUtils'
 
 /* ── helpers ─────────────────────────────────────────────── */
 
@@ -36,7 +37,7 @@ function weatherIcon(condition = '') {
 function dayLabel(unixTs, index, t, i18n) {
     if (index === 0) return t('dashboard.weather.today', 'Today')
     if (index === 1) return t('dashboard.weather.tomorrow', 'Tomorrow')
-    return new Date(unixTs * 1000).toLocaleDateString(i18n.language === 'te' ? 'te-IN' : 'en-IN', { weekday: 'short' })
+    return toISTWeekday(unixTs)
 }
 
 /* ── component ─────────────────────────────────────────────── */

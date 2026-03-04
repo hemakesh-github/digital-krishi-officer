@@ -1,13 +1,14 @@
 from Utils.db_operations import getChatSessions, getDiseaseDetectionHistory
 from Utils.dependencies import verify_token
 from database import get_session
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 
 router = APIRouter()
 
-@router.post("/history")
-def get_history(userId: dict, user: str = Depends(verify_token), session=Depends(get_session)):
-    userId = userId["userId"]
+@router.get("/history")
+def get_history(userId: int = Query(None), user=Depends(verify_token), session=Depends(get_session)):
+    if userId is None:
+        userId = user.id
     
     try:
         chat_sessions = getChatSessions(session, userId)

@@ -4,6 +4,7 @@ import { getMessages, cropAdviceContinue, sendExpertReply } from '../api_service
 import { transcribe } from '../api_services/transcription'
 import { UserContextData } from '../context/UserContext'
 import { useTranslation } from 'react-i18next'
+import { toISTTime } from '../utils/dateUtils'
 
 
 function renderMessage(text) {
@@ -11,11 +12,25 @@ function renderMessage(text) {
     if (typeof text === 'string') {
         return <p>{text}</p>
     }
+    const displayFields = ["crop_name", "query", "disease_identified", "recommended_action"]
+    
+    const hasDisplayableFields = displayFields.some(key => {
+        const value = text[key]
+        return value !== undefined && value !== null && value !== ""
+    })
+    
+    if (!hasDisplayableFields) {
+        return <p>{text.msg || ""}</p>
+    }
+    
     return (
         <div >
             <div>
-                {Object.entries(text).map(([key, value]) => (
-                    ["crop_name", "query", "disease_identified", "recommended_action",].includes(key) ? (
+                {Object.entries(text).map(([key, value]) => {
+                    if (!displayFields.includes(key)) return null
+                    if (value === undefined || value === null || value === "") return null
+                    
+                    return (
                         <>
                             <div
                                 key={key + "-label"}
@@ -33,8 +48,8 @@ function renderMessage(text) {
                                     : String(value)}
                             </div>
                         </>
-                    ) : key == "msg" ? <span className='col-span-2 text-gray-800'>{value}</span> : null
-                ))}
+                    )
+                })}
             </div>
         </div>
     )
@@ -167,7 +182,7 @@ function ChatBubble({ msg, myRole, t }) {
                 {/* Footer: timestamp */}
                 <div className={`flex items-center gap-2 px-1 ${isMine ? 'flex-row-reverse' : 'flex-row'}`}>
                     <span className="text-[10px] text-gray-400">
-                        {msg.created_at ? new Date(msg.created_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true }) : "now"}
+                        {msg.created_at ? toISTTime(msg.created_at) : "now"}
                     </span>
                 </div>
             </div>

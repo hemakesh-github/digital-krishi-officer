@@ -1,8 +1,9 @@
 import { apiClient, withAuthHeader } from './client'
 
-export const getHistory = async (userId) => {
+export const getHistory = async (userId = null) => {
     try {
-        const response = await apiClient.post('users/history', { userId }, {
+        const url = userId ? `users/history?userId=${userId}` : 'users/history'
+        const response = await apiClient.get(url, {
             headers: await withAuthHeader({ 'Content-Type': 'application/json' }),
         })
         return response.data

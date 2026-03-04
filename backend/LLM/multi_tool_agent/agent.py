@@ -1,3 +1,5 @@
+from typing import Optional
+
 from google.adk.agents import Agent
 from Utils.db_operations import addExpertRequest, get_suggestion
 import os
@@ -48,6 +50,7 @@ class AdvisoryResponse(BaseModel):
     disease_identified: str = Field(description="Identified disease based on the symptoms provided by the user, empty string if no disease is identified or if the query is not related to disease")
     recommended_action: str = Field(description="Recommended action for the identified disease")
     needs_escalation: bool = Field(description="Indicates whether the conversation needs to be escalated to a human agent")
+    message: Optional[str] = Field(default="", description="A message for user that can not be categorized under the above fields, can be used to give general advice or information to the user")
     
 search_agent = Agent(
     model='gemini-2.5-flash',
@@ -72,7 +75,13 @@ crop_query_agent = Agent(
             you just escalate the query.
             When you dont find suffiecient context and input is in telugu translate to english and pass to the tools (both for get_suggestion and retrieve_answer) 
             You need to extract the crop name from the query and pass it to the get_suggestion tool and also give in the final response.
-            Your final answer should be in the language specified (telugu or english whichever is specified / the user query is)"""
+            Your final answer should be in the language specified (telugu or english whichever is specified / the user query is)
+            You can respond to generic queries like hi, hello, how are you etc but for crop related queries you should follow the above instructions.
+            I want you to carefully analyse the user query and answer, the addition context and suggestions should only be used to answer user query and if they are not useful in answering user query then ignore that information and do not include in the final answer.
+            You have the ability to ignore the context and suggestions if you think they are not useful in answering the user query, so use that ability when you think the context and suggestions are not useful in answering the user query.
+            When user query is in telugu you can translate in on your own and use the translated query to do retrieval and also to get suggestions but the final response should always be in telugu, also make sure to give the crop name in the final response
+            If translated query is not giving you enough information to do retrieval or to get suggestions then you can try to rewrite the query on your own and then use that rewritten query, or use the original query if you think the original query is better than the translated query, but remember the final response should always be in the language of the user query and also give crop name in the final response
+            """
     ),
     instruction=(
         """
@@ -88,6 +97,7 @@ crop_query_agent = Agent(
         - You have to extract the crop name from the query and pass it to the get_suggestion tool and also give in the final response
         - Your response should always be in the language of the query and language specified
         - Always give crop name in the final response, if you are not able to find crop name from the query then give empty string as crop name in the final response
+        - You can act as translator when the query is in telugu and you can translate it on your own and use the translated query to do retrieval and also to get suggestions but the final response should always be in telugu, also make sure to give the crop name in the final response
         """
     ),
     tools=[get_suggestion, retrieve_answer],

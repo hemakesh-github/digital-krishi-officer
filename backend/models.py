@@ -2,11 +2,14 @@ from typing import Optional, List
 from pydantic import BaseModel
 from sqlalchemy import Column, ForeignKey, Integer, Numeric, String, TIMESTAMP, Text, text, Boolean, BigInteger, Float, Index
 from sqlalchemy.orm import declarative_base, relationship
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy.dialects.postgresql import UUID, JSONB, TIMESTAMP as PG_TIMESTAMP
 import uuid
 
 
 Base = declarative_base()
+
+def utc_now():
+    return text("CURRENT_TIMESTAMP AT TIME ZONE 'UTC'")
 
 class UserOTPReq(BaseModel):
     email: str
@@ -45,7 +48,7 @@ class User(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String(255), unique=True, index=True, nullable=False)
-    created_at = Column(TIMESTAMP, server_default=text("CURRENT_TIMESTAMP"))
+    created_at = Column(PG_TIMESTAMP(timezone=True), server_default=utc_now())
     role = Column(String(10), server_default="farmer")
 
 
