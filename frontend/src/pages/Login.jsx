@@ -20,6 +20,7 @@ const Login = () => {
     const [resendTimer, setResendTimer] = useState(0)
     const [submitLoading, setSubmitLoading] = useState(false)
     const [resendLoading, setResendLoading] = useState(false)
+    const [languageModalOpen, setLanguageModalOpen] = useState(false)
     const { email: loggedEmail, setEmail: setLoggedEmail, type, setType, setUserId } = useContext(UserContextData);
     const navigate = useNavigate();
 
@@ -124,16 +125,57 @@ const Login = () => {
     }
 
     return (
-        <div className="min-h-screen w-full flex items-center justify-center bg-linear-to-br from-green-50 via-emerald-50 to-teal-100 px-4 py-8 font-sans">
-            <div className="w-full max-w-sm rounded-2xl backdrop-blur-xl bg-white/80 border border-green-800/10 shadow-[0_12px_30px_rgba(46,125,50,0.2)] overflow-hidden">
-
-                <div className="flex items-center justify-center gap-2 pt-6 pb-2">
-                    <div className="w-9 h-9 rounded-xl bg-linear-to-br from-green-500 to-emerald-600 flex items-center justify-center text-xl shadow-sm">
-                        🌿
+        <>
+            {languageModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-black/50" onClick={() => setLanguageModalOpen(false)} />
+                    <div className="relative bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl">
+                        <h3 className="text-lg font-bold text-gray-800 mb-4">{t('language.selectLanguage')}</h3>
+                        <div className="flex flex-col gap-3">
+                            {languages.map((lang) => (
+                                <button
+                                    key={lang.code}
+                                    onClick={() => {
+                                        i18n.changeLanguage(lang.code)
+                                        sessionStorage.setItem('language', lang.code)
+                                        setLanguageModalOpen(false)
+                                    }}
+                                    className={`flex items-center gap-3 p-4 rounded-xl border-2 transition-all duration-200 cursor-pointer
+                                        ${i18n.language === lang.code
+                                            ? 'border-green-500 bg-green-50'
+                                            : 'border-gray-200 hover:border-green-300 hover:bg-green-50/50'
+                                        }`}
+                                >
+                                    <span className="text-2xl">{lang.flag}</span>
+                                    <div className="text-left">
+                                        <div className="font-bold text-gray-800">{lang.nativeName}</div>
+                                        <div className="text-sm text-gray-500">{lang.name}</div>
+                                    </div>
+                                </button>
+                            ))}
+                        </div>
+                        <button
+                            onClick={() => setLanguageModalOpen(false)}
+                            className="mt-4 w-full py-2 text-gray-600 hover:text-gray-800 cursor-pointer border-none bg-transparent"
+                        >
+                            Cancel
+                        </button>
                     </div>
-                    <span className="font-extrabold text-gray-800 text-lg tracking-tight">
-                        {t('login.title')}
-                    </span>
+                </div>
+            )}
+
+            <div className="min-h-screen w-full flex items-center justify-center bg-linear-to-br from-green-50 via-emerald-50 to-teal-100 px-4 py-8 font-sans">
+                <div className="w-full max-w-sm rounded-2xl backdrop-blur-xl bg-white/80 border border-green-800/10 shadow-[0_12px_30px_rgba(46,125,50,0.2)] overflow-hidden">
+
+                <div className="flex items-center justify-center px-6 pt-6 pb-2">
+                    <div className="flex items-center justify-center gap-2">
+                        <div className="w-9 h-9 rounded-xl bg-linear-to-br from-green-500 to-emerald-600 flex items-center justify-center text-xl shadow-sm shrink-0">
+                            <img src="/logo.png" alt="" />
+                        </div>
+                        <span className="font-extrabold text-gray-800 text-lg tracking-tight">
+                            {t('login.title')}
+                        </span>
+                    </div>
                 </div>
 
                 {state === 0 && (
@@ -170,41 +212,39 @@ const Login = () => {
 
                 {state > 0 && (
                     <>
-                        <div className="flex items-center justify-between px-4 pt-3 pb-0">
-                            <div className="flex border-b border-green-900/10 flex-1">
+                        <div className="px-6 pt-4 pb-0">
+                            <div className="flex bg-green-50/80 p-1 rounded-xl w-full items-center shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)] border border-green-100/50">
                                 {userTypes.map((user) => (
                                     <button
                                         key={user}
                                         onClick={() => state === 1 && setUserType(user)}
                                         disabled={state === 2}
-                                        className={`flex-1 py-3 text-sm font-semibold transition-all duration-150 border-none ${
-                                            state === 2 ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
-                                        } ${userType === user
-                                                ? 'bg-green-600 text-white'
-                                                : 'bg-green-50 text-green-800 hover:bg-green-100'
+                                        className={`flex-1 py-2 text-sm font-bold transition-all duration-300 rounded-lg border-none ${state === 2 ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
+                                            } ${userType === user
+                                                ? 'bg-white text-green-700 shadow-sm ring-1 ring-black/5'
+                                                : 'bg-transparent text-green-700/60 hover:text-green-800 hover:bg-green-100/50'
                                             }`}
                                     >
                                         {user === 'Farmer' ? t('login.farmer') : user === 'Expert' ? t('login.expert') : t('login.admin')}
                                     </button>
                                 ))}
                             </div>
-                            <div className="relative ml-2">
-                                <button
-                                    onClick={() => {
-                                        const currentIdx = languages.findIndex(l => l.code === i18n.language)
-                                        const nextIdx = (currentIdx + 1) % languages.length
-                                        i18n.changeLanguage(languages[nextIdx].code)
-                                        sessionStorage.setItem('language', languages[nextIdx].code)
-                                    }}
-                                    className="flex items-center gap-1 px-2 py-1.5 text-xs font-medium text-green-700 bg-green-50 hover:bg-green-100 rounded-lg transition-colors"
-                                >
-                                    <span>{languages.find(l => l.code === i18n.language)?.flag}</span>
-                                    <span className="uppercase">{i18n.language}</span>
-                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                                    </svg>
-                                </button>
-                            </div>
+                        </div>
+
+                        <div className="px-6 py-3">
+                            <button
+                                onClick={() => setLanguageModalOpen(true)}
+                                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg bg-green-50 hover:bg-green-100 transition-all duration-200 cursor-pointer border-none"
+                            >
+                                <span className="text-2xl">{languages.find(l => l.code === i18n.language)?.flag}</span>
+                                <div className="flex-1 text-left">
+                                    <div className="text-sm font-semibold text-green-900">{languages.find(l => l.code === i18n.language)?.nativeName}</div>
+                                    <div className="text-xs text-green-700/60">{t('language.changeLanguage')}</div>
+                                </div>
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-green-700/50">
+                                    <polyline points="9 18 15 12 9 6" />
+                                </svg>
+                            </button>
                         </div>
 
                         <div className="px-6 py-7 flex flex-col gap-5">
@@ -283,11 +323,10 @@ const Login = () => {
                             <button
                                 onClick={handleSubmit}
                                 disabled={submitLoading}
-                                className={`w-full py-3 font-bold rounded-xl shadow-md transition-all duration-200 border-none text-sm flex items-center justify-center gap-2 ${
-                                    submitLoading
-                                        ? 'bg-green-400 text-white cursor-not-allowed'
-                                        : 'bg-green-600 hover:bg-green-700 text-white cursor-pointer active:scale-95 hover:shadow-green-900/20'
-                                }`}
+                                className={`w-full py-3 font-bold rounded-xl shadow-md transition-all duration-200 border-none text-sm flex items-center justify-center gap-2 ${submitLoading
+                                    ? 'bg-green-400 text-white cursor-not-allowed'
+                                    : 'bg-green-600 hover:bg-green-700 text-white cursor-pointer active:scale-95 hover:shadow-green-900/20'
+                                    }`}
                             >
                                 {submitLoading ? (
                                     <>
@@ -303,8 +342,7 @@ const Login = () => {
                     </>
                 )}
             </div>
-        </div>
-    )
+        </div>        </>    )
 }
 
 export default Login
