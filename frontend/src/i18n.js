@@ -25,6 +25,7 @@ const resources = {
                 failedOtp: 'Failed to generate OTP. Please try again.',
                 failedVerify: 'Failed to verify OTP. Please try again.',
                 invalidOtpError: 'Invalid OTP. Please try again.',
+                notRegisteredExpert: 'You are not registered as an expert. Please contact administrator.',
                 farmer: 'Farmer',
                 expert: 'Expert',
                 admin: 'Admin'
@@ -258,6 +259,7 @@ const resources = {
                 failedOtp: 'OTP జనరేట్ చేయడంలో విఫలమైంది. దయచేసి మళ్ళీ ప్రయత్నించండి.',
                 failedVerify: 'OTP ధృవీకరణలో విఫలమైంది. దయచేసి మళ్ళీ ప్రయత్నించండి.',
                 invalidOtpError: 'తప్పు OTP. దయచేసి మళ్ళీ ప్రయత్నించండి.',
+                notRegisteredExpert: 'మీరు నిపుణుడిగా నమోదు కాలేదు. దయచేసి administrator ని సంప్రదించండి.',
                 farmer: 'రైతు',
                 expert: 'నిపుణుడు',
                 admin: 'నిర్వాహకుడు'

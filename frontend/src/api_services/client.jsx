@@ -63,6 +63,8 @@ const SILENT_ENDPOINTS = [
     'getUser',
     '/auth/user',
     'auth/refresh',
+    'auth/genOTP',
+    'auth/verifyOTP',
 ]
 
 const shouldShowError = (url) => {

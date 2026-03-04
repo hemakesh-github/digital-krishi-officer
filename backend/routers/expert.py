@@ -70,7 +70,7 @@ def expertAdvice(MessageData: MessageData, session=Depends(get_session)):
 
 
 @router.get("/getPendingQueries")
-def getPendingQueries(session=Depends(get_session), expert_id: int = None):
+def getPendingQueries(expert_id: int = None, session=Depends(get_session)):
     if expert_id is None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

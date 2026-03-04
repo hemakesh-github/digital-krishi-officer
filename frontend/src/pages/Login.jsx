@@ -54,8 +54,13 @@ const Login = () => {
             } else {
                 setError(t('login.failedOtp'))
             }
-        } catch {
-            setError(t('login.failedOtp'))
+        } catch (error) {
+            const detail = error?.response?.data?.detail || ''
+            if (error?.response?.status === 403 && detail.includes('not registered as an expert')) {
+                setError(t('login.notRegisteredExpert'))
+            } else {
+                setError(t('login.failedOtp'))
+            }
         } finally {
             setResendLoading(false)
         }
@@ -79,8 +84,13 @@ const Login = () => {
                 } else {
                     setError(t('login.failedOtp'))
                 }
-            } catch {
-                setError(t('login.failedOtp'))
+            } catch (error) {
+                const detail = error?.response?.data?.detail || ''
+                if (error?.response?.status === 403 && detail.includes('not registered as an expert')) {
+                    setError(t('login.notRegisteredExpert'))
+                } else {
+                    setError(t('login.failedOtp'))
+                }
             } finally {
                 setSubmitLoading(false)
             }
@@ -100,8 +110,13 @@ const Login = () => {
                 } else {
                     setError(t('login.invalidOtpError'))
                 }
-            } catch {
-                setError(t('login.failedVerify'))
+            } catch (error) {
+                const detail = error?.response?.data?.detail || ''
+                if (error?.response?.status === 403 && detail.includes('not registered as an expert')) {
+                    setError(t('login.notRegisteredExpert'))
+                } else {
+                    setError(t('login.failedVerify'))
+                }
             } finally {
                 setSubmitLoading(false)
             }
@@ -155,20 +170,41 @@ const Login = () => {
 
                 {state > 0 && (
                     <>
-                        <div className="flex border-b border-green-900/10">
-                            {userTypes.map((user) => (
+                        <div className="flex items-center justify-between px-4 pt-3 pb-0">
+                            <div className="flex border-b border-green-900/10 flex-1">
+                                {userTypes.map((user) => (
+                                    <button
+                                        key={user}
+                                        onClick={() => state === 1 && setUserType(user)}
+                                        disabled={state === 2}
+                                        className={`flex-1 py-3 text-sm font-semibold transition-all duration-150 border-none ${
+                                            state === 2 ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
+                                        } ${userType === user
+                                                ? 'bg-green-600 text-white'
+                                                : 'bg-green-50 text-green-800 hover:bg-green-100'
+                                            }`}
+                                    >
+                                        {user === 'Farmer' ? t('login.farmer') : user === 'Expert' ? t('login.expert') : t('login.admin')}
+                                    </button>
+                                ))}
+                            </div>
+                            <div className="relative ml-2">
                                 <button
-                                    key={user}
-                                    onClick={() => setUserType(user)}
-                                    className={`flex-1 py-3 text-sm font-semibold transition-all duration-150 border-none cursor-pointer
-                                        ${userType === user
-                                            ? 'bg-green-600 text-white'
-                                            : 'bg-green-50 text-green-800 hover:bg-green-100'
-                                        }`}
+                                    onClick={() => {
+                                        const currentIdx = languages.findIndex(l => l.code === i18n.language)
+                                        const nextIdx = (currentIdx + 1) % languages.length
+                                        i18n.changeLanguage(languages[nextIdx].code)
+                                        sessionStorage.setItem('language', languages[nextIdx].code)
+                                    }}
+                                    className="flex items-center gap-1 px-2 py-1.5 text-xs font-medium text-green-700 bg-green-50 hover:bg-green-100 rounded-lg transition-colors"
                                 >
-                                    {user === 'Farmer' ? t('login.farmer') : user === 'Expert' ? t('login.expert') : t('login.admin')}
+                                    <span>{languages.find(l => l.code === i18n.language)?.flag}</span>
+                                    <span className="uppercase">{i18n.language}</span>
+                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                                    </svg>
                                 </button>
-                            ))}
+                            </div>
                         </div>
 
                         <div className="px-6 py-7 flex flex-col gap-5">

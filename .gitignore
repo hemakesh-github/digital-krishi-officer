@@ -55,9 +55,8 @@ SYSTEM_EVALUATION.md
 .agent/
 models/
 backend/embeddings/
+docs/
 
-
-*.md
 
 
 __pycache__/
@@ -69,3 +68,17 @@ __pycache__/
 backend/diseasePrediction/*.pth
 backend/disease_uploads/
 *.pth
+
+# Test artifacts
+backend/tests/__pycache__/
+backend/tests/.pytest_cache/
+backend/htmlcov/
+backend/.coverage
+coverage.xml
+*.cover
+
+# Frontend test artifacts
+frontend/coverage/
+frontend/src/tests/__snapshots__/
+frontend/src/tests/.vitest/
+

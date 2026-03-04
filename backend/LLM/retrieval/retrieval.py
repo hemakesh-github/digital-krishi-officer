@@ -1,18 +1,21 @@
 from qdrant_client import QdrantClient
 from qdrant_client.http import models
 from .get_model import get_model
+import os
 
-COLLECTION_NAME = 'kcc_knowledge_base'
+COLLECTION_NAME = os.getenv("QDRANT_COLLECTION_NAME") or "kcc_knowledge_base"
+URL = os.getenv("QDRANT_URL")
+QDRANT_API_KEY = os.getenv("QDRANT_API_KEY")
+
 
 # Model will be loaded during FastAPI lifespan startup, or dynamically if not preloaded.
 client = QdrantClient(
-    url="https://2d2879b8-2fe8-466e-9162-61e89208a79a.europe-west3-0.gcp.cloud.qdrant.io:6333",
-    api_key="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY2Nlc3MiOiJtIn0.5Pl59-Hqq9ZrnCVquZupZCszVUgK9NxJ23dc7LM732Y",
+    url=URL,
+    api_key=QDRANT_API_KEY,
 )
 
 def retrieve_answer(query, crop_filter=None, top_k=3):
     """
- 
         Args:
             query (str): Query used to retrieve relevant information from the knowledge base.
             crop_filter (str, optional): Crop name to filter the knowledge base. Defaults to None
@@ -20,7 +23,6 @@ def retrieve_answer(query, crop_filter=None, top_k=3):
 
         Returns:
             List of relevant answers from the knowledge base.        
-    
     """
     query_text = f"Crop: {crop_filter} | Query: {query}" if crop_filter else query
     

@@ -2,6 +2,7 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getDiseaseResult } from '../api_services/diseaseApi'
+import { toISTDateTime } from '../utils/dateUtils'
 
 const resolveImageUrl = (imagePath) => {
     if (!imagePath) return null
@@ -109,10 +110,7 @@ export default function DiseaseResult() {
                     <div>
                         <h1 className="text-xl sm:text-2xl font-extrabold text-gray-900 tracking-tight">{t('diseaseResult.diseaseDetails', 'Disease Prediction Result')}</h1>
                         <p className="text-xs text-gray-400 mt-0.5">
-                            {data.crop} · {new Date(data.date).toLocaleString('en-IN', {
-                                day: '2-digit', month: 'short', year: 'numeric',
-                                hour: '2-digit', minute: '2-digit', hour12: true,
-                            })}
+                            {data.crop} · {toISTDateTime(data.date)}
                         </p>
                     </div>
                 </div>
