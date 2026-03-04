@@ -51,6 +51,14 @@ backend/embeddings/
 *.pth
 models/
 
+# Test files and directories
+backend/tests/
+frontend/src/tests/
+backend/pytest.ini
+backend/requirements-test.txt
+frontend/vitest.config.js
+run_tests.sh
+
 # Test artifacts (Backend)
 backend/tests/__pycache__/
 backend/tests/.pytest_cache/
