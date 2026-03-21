@@ -6,15 +6,15 @@ from fastapi import HTTPException, status, Depends, Cookie
 
 
 def verify_token(access_token: str = Cookie(None), session=Depends(get_session)):
-    try:    
-        mobileNo = JWTOperations.decode_jwt(access_token)
-        if mobileNo is None:
+    try:
+        email = JWTOperations.decode_jwt(access_token)
+        if email is None:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Could not validate credentials",
                 headers={"WWW-Authenticate": "Bearer"},
             )
-        user = getUserFromDB(session, mobileNo)
+        user = getUserFromDB(session, email)
         if user is None:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,

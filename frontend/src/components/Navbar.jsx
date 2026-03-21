@@ -73,10 +73,11 @@ function Logo() {
     return (
         <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center shrink-0 shadow-sm">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+                {/* <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
                     <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z" />
                     <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12" />
-                </svg>
+                </svg> */}
+                <img src="/logo.png" alt="Logo" className="w-5 h-5" />
             </div>
             <div className="flex flex-col leading-tight">
                 <span className="text-sidebar-fg font-extrabold text-[0.82rem] tracking-tight">Digital Krishi</span>
@@ -202,17 +203,17 @@ export default function Navbar() {
     const [mobileOpen, setMobileOpen] = useState(false)
     const [languageModalOpen, setLanguageModalOpen] = useState(false)
     const { t, i18n } = useTranslation()
-    const { type, mobileNo, setType, setMobileNo, setUserId } = useContext(UserContextData)
+    const { type, email, setType, setEmail, setUserId } = useContext(UserContextData)
 
     const handleLogout = async () => {
         await logout()
         setType(null)
-        setMobileNo(null)
+        setEmail(null)
         setUserId(null)
         setMobileOpen(false)
     }
 
-    const isLoggedIn = Boolean(type || mobileNo)
+    const isLoggedIn = Boolean(type || email)
 
 
     const navItems = type

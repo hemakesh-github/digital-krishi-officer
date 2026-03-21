@@ -11,18 +11,18 @@ router = APIRouter()
 @router.post("/addExpert")
 def addExpert(expert: ExpertData, session=Depends(get_session)):
     try:
-        if not expert.mobileNo or not expert.name:
+        if not expert.email or not expert.name:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Mobile number and name are required"
+                detail="Email and name are required"
             )
         
-        expert_obj, is_new = addExpertToDB(session, expert.mobileNo, expert.name)
+        expert_obj, is_new = addExpertToDB(session, expert.email, expert.name)
         
         if is_new:
             message = "Expert added successfully"
         else:
-            message = f"Expert with mobile number {expert.mobileNo} already exists"
+            message = f"Expert with email {expert.email} already exists"
         
         return {
             "success": True,
@@ -94,7 +94,7 @@ async def admin_dashboard(session = Depends(get_session)):
                 "user_id":      e.user_id,
                 "name":         e.name,
                 "is_available": e.is_available,
-                "mobileNo":     e.mobileNo,
+                "email":        e.email,
             }
             for e in experts_list
         ],
