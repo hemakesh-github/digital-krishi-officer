@@ -97,7 +97,7 @@ async def load_locations_from_csv(session = Depends(get_session)):
     Temporary endpoint to load location data from CSV file into database.
     This will insert all locations from data_gen/locations.csv into the locations table.
     """
-    return {**load_locations(session), **extract_and_load_weekly_advice(session)}
+    return {**load_locations(session, use_gcs=False), **extract_and_load_weekly_advice(session, use_gcs=False)}
 
     
 
