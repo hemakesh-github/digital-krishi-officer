@@ -8,21 +8,36 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 from models import CropAdvice
+from Utils.cloud_storage import read_json_from_gcs, read_csv_from_gcs
 
 
-def extract_and_load_weekly_advice(session: Session, json_file_path: str = "data_gen\\weekly_advice_example.json"):
+def extract_and_load_weekly_advice(
+    session: Session, 
+    json_file_path: str = "data_gen/weekly_advice_example.json",
+    use_gcs: bool = True,
+    bucket_name: str = None
+):
     """
     Reads weekly advice data from a JSON file and inserts it into the database 
     using the provided SQLAlchemy session.
+    
+    Args:
+        session: SQLAlchemy session for database operations.
+        json_file_path: Path to the JSON file (local or GCS object path).
+        use_gcs: If True, reads from Google Cloud Storage. If False, reads from local filesystem.
+        bucket_name: GCS bucket name (optional, uses GCS_BUCKET_NAME env var if not provided).
     """
     
-    if not os.path.exists(json_file_path):
-        print(f"Error: JSON file not found at {json_file_path}")
-        return
-
     try:
-        with open(json_file_path, 'r', encoding='utf-8') as f:
-            data = json.load(f)
+        # Load data from GCS or local file
+        if use_gcs:
+            data = read_json_from_gcs(bucket_name=bucket_name, object_name=json_file_path)
+        else:
+            if not os.path.exists(json_file_path):
+                print(f"Error: JSON file not found at {json_file_path}")
+                return
+            with open(json_file_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
 
         # Ensure data is a list; if it's a single dict, wrap it
         if isinstance(data, dict):
@@ -56,7 +71,7 @@ def extract_and_load_weekly_advice(session: Session, json_file_path: str = "data
 
         session.commit()
         msg = f"Successfully processed {len(data)} entries. Added {count} new records."
-        return {"msg":msg}
+        return {"msg": msg}
 
     except json.JSONDecodeError as e:
         print(f"Error decoding JSON: {e}")
@@ -69,53 +84,62 @@ def extract_and_load_weekly_advice(session: Session, json_file_path: str = "data
         return {"err": e}
 
 
-def load_locations(session: Session, csv_file_path: str = "data_gen\\locations.csv"):
+def load_locations(
+    session: Session, 
+    csv_file_path: str = "data_gen/locations.csv",
+    use_gcs: bool = True,
+    bucket_name: str = None
+):
     import csv
     from models import Locations
     from sqlalchemy.dialects.postgresql import insert
-    
-    
     
     try:
         inserted_count = 0
         skipped_count = 0
         
-        with open(csv_file_path, 'r', encoding='utf-8') as file:
-            csv_reader = csv.DictReader(file)
+        # Load data from GCS or local file
+        if use_gcs:
+            rows = read_csv_from_gcs(bucket_name=bucket_name, object_name=csv_file_path)
+        else:
+            if not os.path.exists(csv_file_path):
+                return {"status": "error", "message": f"CSV file not found at {csv_file_path}"}
             
-            for row in csv_reader:
-                # Create location object
-                location_data = {
-                    'city': row['city'].strip(),
-                    'pincode': row['pincode'].strip(),
-                    'district': row['district'].strip(),
-                    'state': row['state'].strip(),
-                    'country': row['country'].strip()
-                }
-                
-                # Use PostgreSQL's INSERT ... ON CONFLICT DO NOTHING
-                stmt = insert(Locations).values(**location_data)
-                stmt = stmt.on_conflict_do_nothing()
-                
-                result = session.exec(stmt)
-                
-                if result.rowcount > 0:
-                    inserted_count += 1
-                else:
-                    skipped_count += 1
+            with open(csv_file_path, 'r', encoding='utf-8') as file:
+                csv_reader = csv.DictReader(file)
+                rows = list(csv_reader)
+        
+        for row in rows:
+            # Create location object
+            location_data = {
+                'city': row['city'].strip(),
+                'pincode': row['pincode'].strip(),
+                'district': row['district'].strip(),
+                'state': row['state'].strip(),
+                'country': row['country'].strip()
+            }
             
-            session.commit()
+            # Use PostgreSQL's INSERT ... ON CONFLICT DO NOTHING
+            stmt = insert(Locations).values(**location_data)
+            stmt = stmt.on_conflict_do_nothing()
+            
+            result = session.exec(stmt)
+            
+            if result.rowcount > 0:
+                inserted_count += 1
+            else:
+                skipped_count += 1
+        
+        session.commit()
         
         return {
             "status": "success",
-            "message": f"Loaded locations from CSV",
+            "message": f"Loaded locations from {'GCS' if use_gcs else 'local file'}",
             "inserted": inserted_count,
             "skipped": skipped_count,
             "total_rows": inserted_count + skipped_count
         }
         
-    except FileNotFoundError:
-        return {"status": "error", "message": f"CSV file not found at {csv_file_path}"}
     except Exception as e:
         session.rollback()
         return {"status": "error", "message": str(e)}

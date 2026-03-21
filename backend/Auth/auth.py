@@ -3,7 +3,7 @@ import secrets
 import string
 from database import get_session
 import bcrypt
-from Utils.messageSending import EmailClient
+from Utils.messageSending import TwillioClient
 from models import UserReq
 from Utils.db_operations import addOTP, getOtp, getUserFromDB, setOtpUsed
 from fastapi.security import OAuth2PasswordBearer
@@ -24,59 +24,51 @@ ALGORITHM = "HS256"
 
 class OTP:
     def genOTP(self, length: int = 6) -> str:
-        characters = string.digits
+        # Generate a random OTP of the specified length
+        characters = string.digits 
         otp = ''.join(secrets.choice(characters) for _ in range(length))
+        
         return otp
-
-    def sendOTP(self, session, email: str):
-        """Generate an OTP, store its hash, and email it to the user."""
-        email_client = EmailClient()
+    
+    def sendOTP(self, session, mobile_number: str):
+        # Logic to send OTP to the given mobile number
+        twilio_client = TwillioClient()
         otp = self.genOTP()
+        body = f"Your OTP is for digital krishi officer is : {otp}"
+        twilio_client.send_sms(to_number=mobile_number, body=body)
         otp_hash = bcrypt.hashpw(otp.encode(), bcrypt.gensalt()).decode()
-
-        # Try to save to DB (up to 3 times)
         for _ in range(3):
-            added = addOTP(session, UserReq(email=email, otp=otp_hash))
+            added = addOTP(session, UserReq(mobileNo=mobile_number, otp=otp_hash))
             if added:
-                break
-        else:
-            return False
+                return added
+        return added
 
-        # Send email (non-blocking failure)
-        try:
-            email_client.send_otp_email(email, otp)
-        except Exception as e:
-            print(f"Warning: Failed to send OTP email to {email}: {e}")
-            # Still return True so login isn't completely broken during dev/misconfiguration
-        return True
-
-    def verifyOTP(self, session, email: str, otp: str):
-        otp_record = getOtp(session, email)
+    def verifyOTP(self, session, mobile_number: str, otp: str):
+        otp_record = getOtp(session, mobile_number)
         if not otp_record:
             raise ValueError("Failed to verify OTP")
-
+    
         x = bcrypt.checkpw(otp.encode(), otp_record.otp_hash.encode())
         if x:
-            setOtpUsed(session, email)
+            setOtpUsed(session, mobile_number)
         return x
 
-
-class JWTOperations:
+class JWTOperations: 
 
     @staticmethod
-    def create_access_token(email: str, expires_delta: timedelta | None = None):
-        to_encode = {'email': email}
+    def create_access_token(phno: str, expires_delta: timedelta | None = None):
+        to_encode = {'phno': phno}
         if expires_delta:
             expire = datetime.now(timezone.utc) + expires_delta
-        else:
-            expire = datetime.now(timezone.utc) + timedelta(minutes=10)
+        else: 
+            expire = datetime.now(timezone.utc) + timedelta(minutes = 10)
         to_encode.update({'exp': expire})
         encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
         return encoded_jwt
 
     @staticmethod
-    def create_refresh_token(email: str):
-        to_encode = {'email': email}
+    def create_refresh_token(phno: str):
+        to_encode = {'phno': phno}
         expire = datetime.now(timezone.utc) + timedelta(days=1)
         to_encode.update({'exp': expire})
         encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
@@ -85,31 +77,31 @@ class JWTOperations:
     @staticmethod
     def decode_jwt(token):
         credential_exception = HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Could not validate credentials",
-            headers={"WWW-Authenticate": "Bearer"},
+            status_code = status.HTTP_401_UNAUTHORIZED,
+            detail= "Could not validate credentials",
+            headers = {"WWW-Authenticate": "Bearer"},
         )
-        try:
+        try: 
             payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-            email = payload.get("email")
-            if email is None:
+            mobileNo = payload.get("phno")
+            if mobileNo is None:
                 raise credential_exception
         except InvalidTokenError:
             raise credential_exception
-        return email
-
+        return mobileNo
+    
     @staticmethod
-    def refresh(refresh_token: str, session=Depends(get_session)):
-        email = JWTOperations.decode_jwt(refresh_token)
-
-        user = getUserFromDB(session, email)
-
+    def refresh(refresh_token: str, session = Depends(get_session)):
+        mobileNo = JWTOperations.decode_jwt(refresh_token)
+        
+        user = getUserFromDB(session, mobileNo)
+        
         if user is None:
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Incorrect email or OTP",
+                status_code = status.HTTP_401_UNAUTHORIZED,
+                detail="Incorrect username or password",
                 headers={"WWW-Authenticate": "Bearer"}
             )
         access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-        access_token = JWTOperations.create_access_token(email, access_token_expires)
+        access_token = JWTOperations.create_access_token(mobileNo, access_token_expires)
         return access_token

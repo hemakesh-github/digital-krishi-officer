@@ -7,7 +7,7 @@ from fastapi import Depends
 def addOTP(session: Session, user: UserReq):
     try:
         otpcode = OTPCode(
-            email=user.email,
+            mobileNo=user.mobileNo,
             otp_hash=user.otp,
         )
         session.add(otpcode)
@@ -18,11 +18,11 @@ def addOTP(session: Session, user: UserReq):
         return False
     return True
 
-def getOtp(session: Session, email: str): 
+def getOtp(session: Session, mobileNo: str): 
     otp_record = (
         session.query(OTPCode)
         .filter(
-            OTPCode.email == email,
+            OTPCode.mobileNo == mobileNo,
             OTPCode.is_used == False
         )
         .order_by(OTPCode.created_at.desc())
@@ -30,8 +30,8 @@ def getOtp(session: Session, email: str):
     )
     return otp_record
 
-def setOtpUsed(session: Session, email: str):
-    otp_record = getOtp(session, email)
+def setOtpUsed(session: Session, mobileNo: str):
+    otp_record = getOtp(session, mobileNo)
     if otp_record:
         otp_record.is_used = True
         session.commit()
@@ -125,7 +125,7 @@ def get_crop_data_from_chat_sessions(session: Session, sessionId):
 
 def addUser(session: Session, user: UserReq):
     try:
-        new_user = User(email=user.email)
+        new_user = User(mobileNo=user.mobileNo)
         session.add(new_user)
         session.commit()
         return new_user
@@ -135,19 +135,19 @@ def addUser(session: Session, user: UserReq):
         return None
 
 
-def getUserFromDB(session: Session, email: str):
-    return session.query(User).filter(User.email == email).first()
+def getUserFromDB(session: Session, mobileNo: str):
+    return session.query(User).filter(User.mobileNo == mobileNo).first()
 
-def getExpert(session: Session, email: str):
-   return session.query(User).filter(User.email == email, User.role == "expert").join(Expert, User.id == Expert.user_id).first()
+def getExpert(session: Session, mobileNo: str):
+   return session.query(User).filter(User.mobileNo == mobileNo, User.role == "expert").join(Expert, User.id == Expert.user_id).first()
 
 
-def addExpertToDB(session: Session, email: str, name: str):
+def addExpertToDB(session: Session, mobileNo: str, name: str):
     
     try:
-        user = getUserFromDB(session, email)
+        user = getUserFromDB(session, mobileNo)
         if not user:
-            user = User(email=email, role="expert")
+            user = User(mobileNo=mobileNo, role="expert")
             session.add(user)
             session.flush()  # Flush to get the user ID
         else:
@@ -347,7 +347,7 @@ def getExpertDashboard(session: Session, expert_id: int = None):
         return {
             "session_id": str(cs.id),
             "cropdata": cs.cropdata or {},
-            "farmer_email": user.email if user else None,
+            "farmer_mobile": user.mobileNo if user else None,
             "user_id": cs.user_id,
             "created_at": cs.created_at.isoformat() if cs.created_at else None,
             "escalated": cs.escalated,
@@ -394,7 +394,7 @@ def getExpertsList(session: Session):
         Expert.user_id,
         Expert.name,
         Expert.is_available,
-        User.email
+        User.mobileNo
     ).join(User, User.id == Expert.user_id).all()
     return total_experts
 

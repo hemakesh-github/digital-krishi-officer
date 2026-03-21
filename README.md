@@ -255,7 +255,7 @@ FROM_EMAIL=your-email
 ### Expert Escalation
 - Farmers can escalate complex issues
 - Experts receive notifications
-- Email notifications for replies
+- SMS / in-app notifications for expert replies (configure Twilio in `.env` on **main**)
 
 ### Weather Integration
 - 5-day weather forecast

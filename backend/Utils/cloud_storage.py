@@ -1,7 +1,8 @@
 import os
 import uuid
 from typing import Optional, Tuple
-
+import json
+import csv
 from fastapi import HTTPException, status
 from google.cloud import storage
 
@@ -67,3 +68,21 @@ def upload_image_bytes(image_bytes: bytes, file_ext: str) -> Tuple[str, str]:
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to upload image, try again",
         ) from exc
+
+
+
+
+def read_json_from_gcs(bucket_name: str, object_name: str) -> dict:
+    client = storage.Client()
+    bucket = client.bucket(bucket_name)
+    blob = bucket.blob(object_name)
+    data = blob.download_as_text(encoding="utf-8")
+    return json.loads(data)
+
+def read_csv_from_gcs(bucket_name: str, object_name: str) -> list:
+    client = storage.Client()
+    bucket = client.bucket(bucket_name)
+    blob = bucket.blob(object_name)
+    data = blob.download_as_text(encoding="utf-8")
+    reader = csv.DictReader(io.StringIO(data))
+    return list(reader)

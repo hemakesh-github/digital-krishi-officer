@@ -63,8 +63,6 @@ const SILENT_ENDPOINTS = [
     'getUser',
     '/auth/user',
     'auth/refresh',
-    'auth/genOTP',
-    'auth/verifyOTP',
 ]
 
 const shouldShowError = (url) => {
@@ -114,10 +112,8 @@ apiClient.interceptors.response.use(
         const statusCode = error?.response?.status
 
         const isSilentEndpoint = shouldShowError(requestUrl) === false
-        const isGetUserCall = requestUrl.includes('auth/getUser')
         
-        // Don't show error for getUser on 401 (will attempt refresh)
-        if (isSilentEndpoint || (isGetUserCall && statusCode === 401)) {
+        if (isSilentEndpoint) {
             return Promise.reject(error)
         }
 
@@ -129,15 +125,7 @@ apiClient.interceptors.response.use(
             return Promise.reject(error)
         }
 
-        // Check if we should attempt token refresh
-        const shouldAttemptRefresh = 
-            statusCode === 401 &&
-            !originalRequest?._retry &&
-            !isRefreshCall &&
-            (wasLoggedIn() || isGetUserCall)
-
-        // Only show error if we're NOT attempting refresh
-        if (!shouldAttemptRefresh && onErrorCallback) {
+        if (onErrorCallback) {
             const errorKey = getErrorKey(error)
             onErrorCallback(errorKey, error)
         }
@@ -146,7 +134,7 @@ apiClient.interceptors.response.use(
             statusCode !== 401 ||
             originalRequest?._retry ||
             isRefreshCall ||
-            (!wasLoggedIn() && !isGetUserCall)
+            !wasLoggedIn()
         ) {
             throw error
         }

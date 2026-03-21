@@ -15,7 +15,7 @@ import { UserContextData } from './context/UserContext'
 
 // Requires login only; role-switching is done inside Dashboard.jsx
 function ProtectedRoute({ children }) {
-    const { email, loading } = useContext(UserContextData)
+    const { mobileNo, loading } = useContext(UserContextData)
     if (loading) {
         return (
             <div className="flex items-center justify-center h-screen bg-gray-50">
@@ -26,13 +26,13 @@ function ProtectedRoute({ children }) {
             </div>
         )
     }
-    if (!email) return <Navigate to="/login" replace />
+    if (!mobileNo) return <Navigate to="/login" replace />
     return children
 }
 
 // Farmer-only pages: redirect experts/admins to /dashboard
 function FarmerRoute({ children }) {
-    const { type, email, loading } = useContext(UserContextData)
+    const { type, mobileNo, loading } = useContext(UserContextData)
     if (loading) {
         return (
             <div className="flex items-center justify-center h-screen bg-gray-50">
@@ -43,7 +43,7 @@ function FarmerRoute({ children }) {
             </div>
         )
     }
-    if (!email) return <Navigate to="/login" replace />
+    if (!mobileNo) return <Navigate to="/login" replace />
     if (type === 'expert' || type === 'admin') return <Navigate to="/dashboard" replace />
     return children
 }

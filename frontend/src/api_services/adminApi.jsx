@@ -5,7 +5,7 @@ export const fetchAdminDashboard = async () => {
     return res.data
 }
 
-export const addExpert = async ({ name, email }) => {
-    const res = await apiClient.post('admin/addExpert', { name, email })
+export const addExpert = async ({ name, mobileNo }) => {
+    const res = await apiClient.post('admin/addExpert', { name, mobileNo })
     return res.data
 }

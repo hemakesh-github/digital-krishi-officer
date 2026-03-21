@@ -19,11 +19,7 @@ export const logout = async () => {
     clearWasLoggedIn()
     try {
         await apiClient.post('auth/logout')
-        // Force a full page reload to clear all cached state
-        window.location.href = '/login'
     } catch (error) {
         console.error('Logout failed:', error)
-        // Even if logout fails, redirect to login
-        window.location.href = '/login'
     }
 }

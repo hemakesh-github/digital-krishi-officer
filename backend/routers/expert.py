@@ -6,9 +6,7 @@ from models import ChatSession, Expert, ExpertRequests, MessageData, User
 from fastapi import Depends, HTTPException, status, APIRouter
 from sqlalchemy import func
 from Utils.dependencies import verify_token
-from Utils.messageSending import EmailClient
-import os
-
+from Utils.messageSending import TwillioClient
 
 router = APIRouter()
 
@@ -17,7 +15,6 @@ def addWeeklyAdvice(session=Depends(get_session)):
     extract_and_load_weekly_advice(session, "C:\\Documents\\farmerAssist\\backend\\data_gen\\weekly_advice_example.json")
     return
 
-HOST = os.getenv("ALLOWED_FRONTEND", "http://localhost:5173")
 
 @router.post("/expertAdvice")
 def expertAdvice(MessageData: MessageData, session=Depends(get_session)):
@@ -43,13 +40,15 @@ def expertAdvice(MessageData: MessageData, session=Depends(get_session)):
         chat_session = getChatSession(session, MessageData.sessionId)
         if chat_session:
             user = session.query(User).filter(User.id == chat_session.user_id).first()
-            if user and user.email:
-                to_email = user.email
+            if user and user.mobileNo:
+                to_number = user.mobileNo
                 try:
-                    email_client = EmailClient()
-                    chat_url = f"{HOST}/chat?session={MessageData.sessionId}"
+                    twillio_client = TwillioClient()
+                    chat_url = f"http://localhost:5173/chat?session={MessageData.sessionId}"
                     user_lang = chat_session.cropdata.get('user_language', 'en') if chat_session.cropdata else 'en'
-                    email_client.send_expert_reply_email(to_email, chat_url, user_lang)
+                    msg = f"An expert has replied to your query on Digital Krishi Officer. View details here: {chat_url}" if user_lang == "en" else f"డిజిటల్ కృషి ఆఫీసర్ లో మీ ప్రశ్నకు నిపుణులు సమాధానం ఇచ్చారు. వివరాలను ఇక్కడ చూడండి: {chat_url}"
+                    twillio_client.send_sms(to_number, msg)
+                    # print(msg)
                     
                     from models import Notification
                     new_notif = Notification(
@@ -61,7 +60,7 @@ def expertAdvice(MessageData: MessageData, session=Depends(get_session)):
                     session.add(new_notif)
                     session.commit()
                 except Exception as e:
-                    print(f"Failed to send email notification or save notif: {e}")
+                    print(f"Failed to send SMS notification via Twilio or save notif: {e}")
 
         return {"success": True, "message": "Reply sent"}
     except Exception as e:
@@ -73,7 +72,7 @@ def expertAdvice(MessageData: MessageData, session=Depends(get_session)):
 
 
 @router.get("/getPendingQueries")
-def getPendingQueries(expert_id: int = None, session=Depends(get_session)):
+def getPendingQueries(session=Depends(get_session), expert_id: int = None):
     if expert_id is None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
