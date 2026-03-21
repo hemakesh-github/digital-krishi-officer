@@ -40,8 +40,12 @@ frontend-new/build/
 
 # Python
 __pycache__/
-*/__pycache__/*
+**/__pycache__/
 *.py[cod]
+*.pyc
+*.pyo
+*.pyd
+*$py.class
 *.class
 
 # ML Models & Uploads
