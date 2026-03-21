@@ -16,15 +16,15 @@ dist/
 *.swo
 *~
 .idea/
-old/
 models/
 backend/LLM/retrieval/models/
 gothic-venture-448805-j9-1867d9f3425a.json
+
 # Jupyter Notebooks
 .ipynb_checkpoints/
 *.ipynb_checkpoints
 
-# Data & Artifacts (already added 'models/' but be explicit)
+# Data & Artifacts
 *.csv
 !*requirements*.csv
 
@@ -32,40 +32,57 @@ gothic-venture-448805-j9-1867d9f3425a.json
 eda_report.txt
 eda_output.txt
 
-# Jupyter Notebook Checkpoints
-backend/.ipynb_checkpoints/
-models/.ipynb_checkpoints/
-
 # Frontend Build Artifacts
 frontend/dist/
 frontend-new/dist/
 frontend/build/
 frontend-new/build/
 
-# Cache from Data Processing
-backend/data_gen/__pycache__/
-n o d e _ m o d u l e s / 
- 
- p a c k a g e - l o c k . j s o n 
- 
- 
-
-Deployment Guide.md
-SYSTEM_EVALUATION.md
-.cursor/
-.agent/
-models/
-backend/embeddings/
-
-
-*.md
-
-
+# Python
 __pycache__/
+*/__pycache__/*
 *.py[cod]
 *.class
 
-
+# ML Models & Uploads
 backend/diseasePrediction/*.pth
 backend/disease_uploads/
+backend/embeddings/
 *.pth
+models/
+
+# Test files and directories
+backend/tests/
+frontend/src/tests/
+backend/pytest.ini
+backend/requirements-test.txt
+frontend/vitest.config.js
+run_tests.sh
+
+# Test artifacts (Backend)
+backend/tests/__pycache__/
+backend/tests/.pytest_cache/
+backend/.pytest_cache/
+backend/htmlcov/
+backend/.coverage
+coverage.xml
+*.cover
+report*.html
+test_report.md
+TEST_REPORT.md
+EVALUATION_REPORT.md
+
+# Test artifacts (Frontend)
+frontend/coverage/
+frontend/src/tests/__snapshots__/
+frontend/src/tests/.vitest/
+frontend/.vitest/
+
+# Documentation (generated)
+docs/
+Deployment Guide.md
+SYSTEM_EVALUATION.md
+
+# IDE
+.cursor/
+.agent/

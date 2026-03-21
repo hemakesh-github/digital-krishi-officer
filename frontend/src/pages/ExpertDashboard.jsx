@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { getExpertDashboard } from '../api_services/api_services'
 import { useTranslation } from 'react-i18next'
+import { toISTDate } from '../utils/dateUtils'
 
 // ── Helpers ──────────────────────────────────────────────────────────────
 function timeAgo(iso) {
@@ -10,12 +11,20 @@ function timeAgo(iso) {
     if (h < 1) return `${Math.round(h * 60)}m ago`
     if (h < 24) return `${Math.round(h)}h ago`
     if (h < 48) return 'Yesterday'
-    return new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: '2-digit' })
+    return toISTDate(iso)
 }
 
-function maskMobile(no) {
-    const s = String(no || '')
-    return s.length >= 4 ? `+91 ****${s.slice(-4)}` : (s || '—')
+/** Mask farmer contact: mobile (10+ digits) or email */
+function maskContact(value) {
+    const s = String(value || '')
+    if (!s) return '—'
+    if (s.includes('@')) {
+        const [local, domain] = s.split('@')
+        if (!domain) return s
+        return `${local.slice(0, 2)}***@${domain}`
+    }
+    const digits = s.replace(/\D/g, '')
+    return digits.length >= 4 ? `+91 ****${digits.slice(-4)}` : s
 }
 
 function cropEmoji(crop) {
@@ -185,7 +194,7 @@ function PendingList({ queries, onOpen, t }) {
                             <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 mb-1">
                                     <span className="font-bold text-gray-900 capitalize">{t('dashboard.expert.farmerQuery')}</span>
-                                    <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded font-mono">{maskMobile(q.farmer_mobile)}</span>
+                                    <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded font-mono">{maskContact(q.farmer_mobile || q.farmer_email)}</span>
                                 </div>
                                 <div className="text-sm text-gray-600 mb-2 line-clamp-1">{cd.query || '—'}</div>
                                 <div className="flex items-center gap-2 flex-wrap">
@@ -241,7 +250,7 @@ function AnsweredList({ queries, onOpen, t }) {
                             <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 mb-1">
                                     <span className="font-bold text-gray-900 capitalize">{t('dashboard.expert.farmerQuery')}</span>
-                                    <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded font-mono">{maskMobile(q.farmer_mobile)}</span>
+                                    <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded font-mono">{maskContact(q.farmer_mobile || q.farmer_email)}</span>
                                 </div>
                                 <div className="text-sm text-gray-600 mb-2 line-clamp-1">{cd.query || '—'}</div>
                                 <div className="flex items-center gap-2 flex-wrap">

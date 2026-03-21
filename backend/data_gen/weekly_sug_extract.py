@@ -75,11 +75,13 @@ def extract_and_load_weekly_advice(
 
     except json.JSONDecodeError as e:
         print(f"Error decoding JSON: {e}")
+        return {"err": e}
     except Exception as e:
         print(f"An error occurred: {e}")
         import traceback
         traceback.print_exc()
         session.rollback()
+        return {"err": e}
 
 
 def load_locations(

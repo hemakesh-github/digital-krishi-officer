@@ -4,6 +4,7 @@ import { getMessages, cropAdviceContinue, sendExpertReply } from '../api_service
 import { transcribe } from '../api_services/transcription'
 import { UserContextData } from '../context/UserContext'
 import { useTranslation } from 'react-i18next'
+import { toISTTime } from '../utils/dateUtils'
 
 
 function renderMessage(text) {
@@ -11,17 +12,31 @@ function renderMessage(text) {
     if (typeof text === 'string') {
         return <p>{text}</p>
     }
+    const displayFields = ["crop_name", "query", "disease_identified", "recommended_action", "message"]
+
+    const hasDisplayableFields = displayFields.some(key => {
+        const value = text[key]
+        return value !== undefined && value !== null && value !== ""
+    })
+
+    if (!hasDisplayableFields) {
+        return <p>{text.msg || ""}</p>
+    }
+
     return (
         <div >
             <div>
-                {Object.entries(text).map(([key, value]) => (
-                    ["query", "disease_identified", "recommended_action",].includes(key) ? (
+                {Object.entries(text).map(([key, value]) => {
+                    if (!displayFields.includes(key)) return null
+                    if (value === undefined || value === null || value === "") return null
+
+                    return (
                         <>
                             <div
                                 key={key + "-label"}
                                 className="font-semibold text-gray-500 uppercase w-100% text-left"
                             >
-                                {key.replaceAll("_", " ")}:
+                                {key != "message" ? key.replaceAll("_", " ") : <></>}
                             </div>
 
                             <div
@@ -33,8 +48,8 @@ function renderMessage(text) {
                                     : String(value)}
                             </div>
                         </>
-                    ) : key == "msg" ? <span className='col-span-2 text-gray-800'>{value}</span> : null
-                ))}
+                    )
+                })}
             </div>
         </div>
     )
@@ -167,7 +182,7 @@ function ChatBubble({ msg, myRole, t }) {
                 {/* Footer: timestamp */}
                 <div className={`flex items-center gap-2 px-1 ${isMine ? 'flex-row-reverse' : 'flex-row'}`}>
                     <span className="text-[10px] text-gray-400">
-                        {msg.created_at ? new Date(msg.created_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true }) : "now"}
+                        {msg.created_at ? toISTTime(msg.created_at) : "now"}
                     </span>
                 </div>
             </div>
@@ -186,6 +201,7 @@ export default function Chat() {
     const [messages, setMessages] = useState([])
     const [input, setInput] = useState('')
     const [isTyping, setIsTyping] = useState(false)
+    const [isSending, setIsSending] = useState(false)
     const [isRecording, setIsRecording] = useState(false)
     const [isTranscribing, setIsTranscribing] = useState(false)
     const [interimText, setInterimText] = useState('')
@@ -231,18 +247,24 @@ export default function Chat() {
             setInput('')
             setInterimText('') // Clear interim text after sending
 
-            // Expert flow: reply to farmer, then go back to dashboard
+            // Expert flow: reply to farmer, stay in chat
             if (userData?.type === 'expert') {
-                setIsTyping(true)
+                setIsSending(true)
+                // Add the expert's message immediately for UI optimism
+                setMessages(prev => [...prev, { id: 'temp-' + Date.now(), role: "expert", content: trimmed, created_at: new Date().toISOString() }])
                 await sendExpertReply(sessionId, trimmed)
-                setIsTyping(false)
-                navigate('/dashboard')
+
+                // Refresh messages from server to get correct IDs/timestamps
+                const response = await getMessages(sessionId)
+                setMessages(Array.isArray(response) ? response : [])
+                setIsSending(false)
                 return
             }
 
             // Farmer flow: continue AI crop advice chat
             setIsTyping(true)
-            setMessages(prev => [...prev, { id: Date.now(), role: "farmer", content: trimmed, created_at: new Date().toISOString() }])
+            setIsSending(true)
+            setMessages(prev => [...prev, { id: 'temp-' + Date.now(), role: "farmer", content: trimmed, created_at: new Date().toISOString() }])
             await cropAdviceContinue(sessionId, trimmed)
             const response = await getMessages(sessionId)
             const first = response?.[0]
@@ -250,9 +272,11 @@ export default function Chat() {
             setCropName(firstContent?.crop_name || firstContent?.crop || "")
             setMessages(Array.isArray(response) ? response : [])
             setIsTyping(false)
+            setIsSending(false)
         } catch (err) {
             console.log(err)
             setIsTyping(false)
+            setIsSending(false)
         }
     }
 
@@ -328,9 +352,9 @@ export default function Chat() {
 
 
 
-                    {/* Context pills — hidden on xs */}
+                    {/* Crop name pill */}
                     {cropName && (
-                        <div className="hidden sm:flex gap-1.5 ml-1">
+                        <div className="flex gap-1.5 ml-1">
                             <span className="text-[11px] bg-green-50 text-green-700 border border-green-100 px-2.5 py-0.5 rounded-full font-semibold">🌾 {cropName}</span>
                         </div>
                     )}
@@ -422,9 +446,9 @@ export default function Chat() {
                     {/* Send button */}
                     <button
                         onClick={() => sendMessage(input)}
-                        disabled={!input.trim() || isTyping || isTranscribing}
+                        disabled={!input.trim() || isSending || isTranscribing}
                         className={`shrink-0 w-10 h-10 rounded-xl flex items-center justify-center text-lg border-none transition-all duration-150
-                            ${input.trim() && !isTyping && !isTranscribing
+                            ${input.trim() && !isSending && !isTranscribing
                                 ? 'bg-green-600 hover:bg-green-700 text-white cursor-pointer active:scale-95 shadow-sm shadow-green-200'
                                 : 'bg-gray-100 text-gray-300 cursor-not-allowed'
                             }`}

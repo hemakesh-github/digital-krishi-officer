@@ -2,6 +2,7 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getDiseaseResult } from '../api_services/diseaseApi'
+import { toISTDateTime } from '../utils/dateUtils'
 
 const resolveImageUrl = (imagePath) => {
     if (!imagePath) return null
@@ -18,7 +19,6 @@ export default function DiseaseResult() {
     const [data, setData] = useState(navState || null)
     const [loading, setLoading] = useState(!navState)
     const [error, setError] = useState(null)
-
     useEffect(() => {
         if (!data && sessionId) {
             const fetchResult = async () => {
@@ -109,10 +109,7 @@ export default function DiseaseResult() {
                     <div>
                         <h1 className="text-xl sm:text-2xl font-extrabold text-gray-900 tracking-tight">{t('diseaseResult.diseaseDetails', 'Disease Prediction Result')}</h1>
                         <p className="text-xs text-gray-400 mt-0.5">
-                            {data.crop} · {new Date(data.date).toLocaleString('en-IN', {
-                                day: '2-digit', month: 'short', year: 'numeric',
-                                hour: '2-digit', minute: '2-digit', hour12: true,
-                            })}
+                            {data.crop} · {toISTDateTime(data.date)}
                         </p>
                     </div>
                 </div>
@@ -166,7 +163,7 @@ export default function DiseaseResult() {
                         {/* Full result text */}
                         <div className="bg-rose-50 border border-rose-100 rounded-xl px-4 py-3 text-sm text-gray-700 leading-relaxed">
                             <span className="font-semibold text-rose-600">{t('diseaseResult.aiResult', 'AI Result')}: </span>
-                            {t(`diseases.${diseaseName}`, diseaseName)} {t('dashboard.disease.detectedLabel', 'detected').toLowerCase()} ({confidence}%)
+                            {t(`diseases.${diseaseName}`, diseaseName)} {t('dashboard.disease.detectedLabel', 'detected').toLowerCase()} {confidence}
                         </div>
                     </div>
                 </div>

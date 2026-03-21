@@ -138,7 +138,7 @@ export default function DiseasePredictionCard() {
                         <div className="min-w-0">
                             <p className="text-[10px] text-muted-fg font-semibold uppercase tracking-wider">{t('dashboard.disease.detectedLabel')}</p>
                             <p className="text-sm font-bold text-foreground truncate" title={result.disease}>{t(`diseases.${result.disease}`, result.disease)}</p>
-                            <p className="text-[11px] text-muted-fg mt-0.5">{result.confidence}% {t('dashboard.disease.confidence')} · {result.severity || t('history.unknown')}</p>
+                            <p className="text-[11px] text-muted-fg mt-0.5">{result.confidence}% {t('dashboard.disease.confidence')} </p>
                         </div>
                         {/* Confidence ring */}
                         <div className="shrink-0 w-10 h-10 relative">
@@ -152,7 +152,7 @@ export default function DiseasePredictionCard() {
                         </div>
                     </div>
                 )}
-
+                    
                 {/* Predict / View Details button */}
                 {result && !loading ? (
                     <button
