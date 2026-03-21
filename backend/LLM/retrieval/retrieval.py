@@ -56,7 +56,7 @@ def retrieve_answer(query, crop_filter=None, top_k=3):
         orig_q = hit.payload.get('QueryText')
         ans = hit.payload.get('KccAns')
         result.append({"context": ans, "score": score, "historical_query": orig_q})
-        # print(f"\n[Score: {score:.4f}] Crop: {crop}")
-        # print(f"❓ Hist. Query: {orig_q}")
-        # print(f"💡 Answer: {ans}...")
+        print(f"\n[Score: {score:.4f}] Crop: {crop}")
+        print(f"❓ Hist. Query: {orig_q}")
+        print(f"💡 Answer: {ans}...")
     return result

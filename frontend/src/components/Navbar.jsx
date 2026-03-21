@@ -134,7 +134,7 @@ function SidebarContent({ navItems, isLoggedIn, onLogout, onLinkClick, currentLa
 
     const handleLogout = async () => {
         await onLogout();
-        navigate('/login')
+        // Navigation handled by logout function
     }
 
     return (
@@ -207,10 +207,7 @@ export default function Navbar() {
 
     const handleLogout = async () => {
         await logout()
-        setType(null)
-        setEmail(null)
-        setUserId(null)
-        setMobileOpen(false)
+        // logout() now handles redirect and state clearing via page reload
     }
 
     const isLoggedIn = Boolean(type || email)

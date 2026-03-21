@@ -7,6 +7,8 @@ from fastapi import Depends, HTTPException, status, APIRouter
 from sqlalchemy import func
 from Utils.dependencies import verify_token
 from Utils.messageSending import EmailClient
+import os
+
 
 router = APIRouter()
 
@@ -15,6 +17,7 @@ def addWeeklyAdvice(session=Depends(get_session)):
     extract_and_load_weekly_advice(session, "C:\\Documents\\farmerAssist\\backend\\data_gen\\weekly_advice_example.json")
     return
 
+HOST = os.getenv("ALLOWED_FRONTEND", "http://localhost:5173")
 
 @router.post("/expertAdvice")
 def expertAdvice(MessageData: MessageData, session=Depends(get_session)):
@@ -44,7 +47,7 @@ def expertAdvice(MessageData: MessageData, session=Depends(get_session)):
                 to_email = user.email
                 try:
                     email_client = EmailClient()
-                    chat_url = f"http://localhost:5173/chat?session={MessageData.sessionId}"
+                    chat_url = f"{HOST}/chat?session={MessageData.sessionId}"
                     user_lang = chat_session.cropdata.get('user_language', 'en') if chat_session.cropdata else 'en'
                     email_client.send_expert_reply_email(to_email, chat_url, user_lang)
                     
