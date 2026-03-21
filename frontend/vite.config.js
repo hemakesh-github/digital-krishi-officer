@@ -7,10 +7,10 @@ export default defineConfig({
   server: {
 
     host: '0.0.0.0', 
-    https: {
-              key: fs.readFileSync('./.cert/key.pem'),
-              cert: fs.readFileSync('./.cert/cert.pem'),
-            },
+    // https: {
+    //           key: fs.readFileSync('./.cert/key.pem'),
+    //           cert: fs.readFileSync('./.cert/cert.pem'),
+    //         },
   },
   plugins: [react(), tailwindcss()],
 })
