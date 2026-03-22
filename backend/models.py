@@ -9,7 +9,8 @@ import uuid
 Base = declarative_base()
 
 def utc_now():
-    return text("CURRENT_TIMESTAMP AT TIME ZONE 'UTC'")
+    # TIMESTAMPTZ stores an absolute instant; DEFAULT must not use AT TIME ZONE (PG syntax error).
+    return text("CURRENT_TIMESTAMP")
 
 class UserOTPReq(BaseModel):
     email: str
