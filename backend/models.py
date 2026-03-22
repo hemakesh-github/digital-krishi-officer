@@ -65,7 +65,7 @@ class ChatSession(Base):
     user_id = Column(BigInteger, nullable=False, index=True)
     # Denormalized field for faster dashboard queries (avoids JOIN with users table)
     farmer_email = Column(String(255), nullable=True, index=True)
-    created_at = Column(TIMESTAMP, server_default=text("CURRENT_TIMESTAMP"))
+    created_at = Column(TIMESTAMP(timezone=False), server_default=text("CURRENT_TIMESTAMP"))
     messages = relationship("Message", back_populates="session", cascade="all, delete-orphan")
     escalated = Column(Boolean, default=False)
 
@@ -77,7 +77,7 @@ class Message(Base):
     session_id = Column(UUID, ForeignKey("chat_sessions.id", ondelete="CASCADE"))
     role = Column(String(20), nullable=False)
     content = Column(Text, nullable=False)
-    created_at = Column(TIMESTAMP, server_default=text("CURRENT_TIMESTAMP"))
+    created_at = Column(TIMESTAMP(timezone=False), server_default=text("CURRENT_TIMESTAMP"))
     session = relationship("ChatSession", back_populates="messages")
 
 class Expert(Base):
@@ -93,9 +93,9 @@ class OTPCode(Base):
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String(255), nullable=False)
     otp_hash = Column(Text, nullable=False)
-    expires_at = Column(TIMESTAMP, nullable=False, server_default=text("CURRENT_TIMESTAMP + INTERVAL '15 minutes'"))
+    expires_at = Column(TIMESTAMP(timezone=False), nullable=False, server_default=text("CURRENT_TIMESTAMP + INTERVAL '15 minutes'"))
     is_used = Column(Boolean, default=False)
-    created_at = Column(TIMESTAMP, server_default=text("CURRENT_TIMESTAMP"))
+    created_at = Column(TIMESTAMP(timezone=False), server_default=text("CURRENT_TIMESTAMP"))
 
 class ExpertRequests(Base):
     __tablename__ = "expert_requests"
@@ -109,9 +109,9 @@ class ExpertRequests(Base):
     session_id = Column(UUID(as_uuid=True), ForeignKey("chat_sessions.id", ondelete="CASCADE"), index=True)
     expert_id = Column(Integer, ForeignKey("experts.user_id", ondelete="CASCADE"), index=True)
     status = Column(String(20), default="pending", index=True)
-    created_at = Column(TIMESTAMP, server_default=text("CURRENT_TIMESTAMP"))
-    updated_at = Column(TIMESTAMP, server_default=text("CURRENT_TIMESTAMP"), onupdate=text("CURRENT_TIMESTAMP"))
-    responded_at = Column(TIMESTAMP, nullable=True)
+    created_at = Column(TIMESTAMP(timezone=False), server_default=text("CURRENT_TIMESTAMP"))
+    updated_at = Column(TIMESTAMP(timezone=False), server_default=text("CURRENT_TIMESTAMP"), onupdate=text("CURRENT_TIMESTAMP"))
+    responded_at = Column(TIMESTAMP(timezone=False), nullable=True)
 
 # Define the CropAdvice model
 class CropAdvice(Base):
@@ -123,7 +123,7 @@ class CropAdvice(Base):
     stage = Column(String(255), nullable=False)
     problem_disease = Column(String(255), nullable=False)
     advice = Column(String(500), nullable=False)
-    created_at = Column(TIMESTAMP, server_default=text("CURRENT_TIMESTAMP"))
+    created_at = Column(TIMESTAMP(timezone=False), server_default=text("CURRENT_TIMESTAMP"))
     
     def __repr__(self):
         return f"<CropAdvice(district='{self.district}', crop='{self.crop}', problem_disease='{self.problem_disease}')>"
@@ -147,7 +147,7 @@ class DiseaseDetection(Base):
     image = Column(String(255), nullable=False)
     disease = Column(String(255), nullable=False)
     confidence = Column(Float, nullable=False)
-    created_at = Column(TIMESTAMP, server_default=text("CURRENT_TIMESTAMP"))
+    created_at = Column(TIMESTAMP(timezone=False), server_default=text("CURRENT_TIMESTAMP"))
 
 class Notification(Base):
     __tablename__ = "notifications"
@@ -158,5 +158,5 @@ class Notification(Base):
     expert_name = Column(String(50), nullable=True)
     message = Column(Text, nullable=False)
     is_read = Column(Boolean, default=False)
-    created_at = Column(TIMESTAMP, server_default=text("CURRENT_TIMESTAMP"))
+    created_at = Column(TIMESTAMP(timezone=False), server_default=text("CURRENT_TIMESTAMP"))
 
