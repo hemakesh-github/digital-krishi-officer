@@ -2,7 +2,7 @@ import axios from 'axios'
 import i18n from '../i18n'
 
 const SERVER_URL = import.meta.env.VITE_API_URL || "https://digital-krishi-officer-git-backend-48090216647.asia-south1.run.app/"
-
+console.log(SERVER_URL)
 axios.defaults.withCredentials = true
 
 export const apiClient = axios.create({
