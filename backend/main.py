@@ -56,7 +56,7 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 60
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://localhost:5173","http://localhost:5173", "http://localhost:5174", "https://127.0.0.1:5174", "https://192.168.0.100:5173", ALLOWED_URL], 
+    allow_origins=["https://localhost:5173","http://localhost:5173", "http://localhost:5174", "https://127.0.0.1:5174", "https://192.168.0.100:5173", ALLOWED_URL, "https://digitalkrishiofficer.me", "https://www.digitalkrishiofficer.me"], 
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
