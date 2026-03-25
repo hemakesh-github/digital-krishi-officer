@@ -11,20 +11,34 @@ class DiseasePrediction:
     def __init__(self):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         print(self.device)
-        bucket_name = os.getenv("GCS_BUCKET_NAME")
-        blob_path =  os.getenv("GCS_BUCKET_FOLDER_MODEL")+"/disease/best_model.pth"
-        local_path = "/tmp/best_model.pth"
 
-        # Download from GCS if not already in /tmp
+        bucket_name = os.getenv("GCS_BUCKET_NAME")
+        if not bucket_name:
+            raise ValueError("GCS_BUCKET_NAME is not set")
+
+        # Full blob path override, e.g. "models/disease/best_model.pth"
+        explicit = os.getenv("GCS_DISEASE_MODEL_BLOB", "").strip().lstrip("/")
+        if explicit:
+            blob_path = explicit
+        else:
+            folder = (os.getenv("GCS_BUCKET_FOLDER_MODEL") or "models").strip().strip("/")
+            blob_path = f"{folder}/disease/best_model.pth"
+
+        local_path = os.getenv("DISEASE_MODEL_LOCAL_PATH", "/tmp/best_model.pth")
+
         if not os.path.exists(local_path):
             client = storage.Client()
-            print(client)
             bucket = client.bucket(bucket_name)
-            print(bucket)
             blob = bucket.blob(blob_path)
-            print(blob)
+            if not blob.exists():
+                raise FileNotFoundError(
+                    f"Disease model not in GCS. Upload best_model.pth to: "
+                    f"gs://{bucket_name}/{blob_path} "
+                    f"(bucket currently has models/embeddings/ but needs models/disease/). "
+                    f"Or set GCS_DISEASE_MODEL_BLOB to the correct object path."
+                )
+            print(f"Downloading gs://{bucket_name}/{blob_path} -> {local_path}")
             blob.download_to_filename(local_path)
-            
 
         print(f"Loading model from: {local_path}")
 

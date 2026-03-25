@@ -28,12 +28,15 @@ def get_disease_predictor():
 def load_disease_model():
     global disease_predictor
     from diseasePrediction.disease_model import DiseasePrediction
+    import traceback
+
     try:
         disease_predictor = DiseasePrediction()
         print(f"disease model loaded successfully on {disease_predictor.device}")
         return True
     except Exception as e:
-        print(f"Error loading model")
+        print(f"Error loading disease model: {e}")
+        traceback.print_exc()
     print("Warning: Disease model not found at startup")
     return False
 
