@@ -88,7 +88,7 @@ class OTPCode(Base):
     __tablename__ = "otp_codes"
 
     id = Column(Integer, primary_key=True, index=True)
-    mobileNo = Column(String(13), nullable=False)
+    mobileNo = Column("mobile_no", String(13), nullable=False)
     otp_hash = Column(Text, nullable=False)
     expires_at = Column(TIMESTAMP, nullable=False, server_default=text("CURRENT_TIMESTAMP + INTERVAL '15 minutes'"))
     is_used = Column(Boolean, default=False)
