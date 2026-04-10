@@ -1,7 +1,7 @@
 import axios from 'axios'
 import i18n from '../i18n'
 
-const SERVER_URL = import.meta.env.VITE_API_URL || "https://digital-krishi-officer-backend-48090216647.asia-south1.run.app/"
+const SERVER_URL = import.meta.env.VITE_API_URL || "https://digital-krishi-officer-678135677514.asia-south1.run.app/"
 console.log(SERVER_URL)
 axios.defaults.withCredentials = true
 
