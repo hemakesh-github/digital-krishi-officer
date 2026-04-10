@@ -22,24 +22,45 @@ const IST_FULL_DATE_OPTIONS = {
     hour12: true
 };
 
+function parseUtcTimestamp(value) {
+    if (!value) return null;
+    if (value instanceof Date) return Number.isNaN(value.getTime()) ? null : value;
+
+    const normalizedValue =
+        typeof value === 'string' && !/[zZ]|[+-]\d{2}:\d{2}$/.test(value)
+            ? `${value}Z`
+            : value;
+
+    const parsedDate = new Date(normalizedValue);
+    return Number.isNaN(parsedDate.getTime()) ? null : parsedDate;
+}
+
+export function formatTime(utcTimestamp) {
+    const parsedDate = parseUtcTimestamp(utcTimestamp);
+    if (!parsedDate) return '';
+    return parsedDate.toLocaleTimeString('en-IN', IST_OPTIONS);
+}
+
 export function toISTTime(isoString) {
-    if (!isoString) return '';
-    return new Date(isoString).toLocaleTimeString('en-IN', IST_OPTIONS);
+    return formatTime(isoString);
 }
 
 export function toISTDate(isoString) {
-    if (!isoString) return '';
-    return new Date(isoString).toLocaleDateString('en-IN', IST_DATE_OPTIONS);
+    const parsedDate = parseUtcTimestamp(isoString);
+    if (!parsedDate) return '';
+    return parsedDate.toLocaleDateString('en-IN', IST_DATE_OPTIONS);
 }
 
 export function toISTDateTime(isoString) {
-    if (!isoString) return '';
-    return new Date(isoString).toLocaleString('en-IN', IST_FULL_DATE_OPTIONS);
+    const parsedDate = parseUtcTimestamp(isoString);
+    if (!parsedDate) return '';
+    return parsedDate.toLocaleString('en-IN', IST_FULL_DATE_OPTIONS);
 }
 
 export function toISTWeekday(timestamp) {
-    if (!timestamp) return '';
-    return new Date(timestamp * 1000).toLocaleDateString('en-IN', { 
+    const parsedDate = parseUtcTimestamp(timestamp * 1000);
+    if (!parsedDate) return '';
+    return parsedDate.toLocaleDateString('en-IN', {
         timeZone: 'Asia/Kolkata', 
         weekday: 'short' 
     });
